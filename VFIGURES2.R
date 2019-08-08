@@ -68,12 +68,13 @@ umap15_res_df  = setDT(umap15_res_df , keep.rownames = TRUE)[]
 colnames(umap15_res_df)[1] <- "Sample_ID"
 
 ### NN 208
-
-umap208 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 208)
-umap208_res_df <- as.data.frame(umap208$layout)
-umap208_res_df  = setDT(umap208_res_df , keep.rownames = TRUE)[]
-colnames(umap208_res_df)[1] <- "Sample_ID"
-umap208_res_df <- umap208_res_df[order(umap208_res_df$Sample_ID),]
+umap208_res_df <- read.table("data/Coords_umap_nn208.tsv")
+colnames(umap208_res_df) <- c("Sample_ID", "V1", "V2") 
+#umap208 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 208)
+#umap208_res_df <- as.data.frame(umap208$layout)
+#umap208_res_df  = setDT(umap208_res_df , keep.rownames = TRUE)[]
+#colnames(umap208_res_df)[1] <- "Sample_ID"
+#umap208_res_df <- umap208_res_df[order(umap208_res_df$Sample_ID),]
 
 p2_standard_nn208 <- ggplot(umap208_res_df, aes(x=V1, y=V2,  color=Attributes_UMAP_TCACLCNECSCL$Molecular_clusters)) +  geom_point(size=4, alpha =.8) + scale_color_brewer(palette="Spectral") +labs(title= "208")+ theme(legend.title = element_blank()) + theme(legend.position = "none")
 p2_standard_nn208 <- p2_standard_nn208 +  labs(title="", y="dim2", x="dim1")  +
@@ -871,19 +872,6 @@ pS02297ACPH <- pS02297ACPH + geom_point(aes(x = UmapS02297ACPH$V1[which(UmapS022
          legend.title = element_blank())#+  guides(col = guide_legend( ncol = 2))  # Y axis text
 
 
-# Some statistics --------------------------------------------------------
-
-t.test(SdMap_Umap$SD_mean[SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "LCNEC/NA"| SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "LCNEC/TypeII"| SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "LCNEC/TypeI"|  SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "SCLC/LCNEC-like"|
-                     SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "SCLC/SCLC-like" ],
-
-SdMap_Umap_refACP$SD_mean[SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "LCNEC/NA"| SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "LCNEC/TypeII"| SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "LCNEC/TypeI"|  SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "SCLC/LCNEC-like"|
-                     SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "SCLC/SCLC-like" ], paired = T, alternative = "greater")
-
-
-
-t.test(SdMap_Umap$SD_mean[SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "Carcinoid-A2"| SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "Carcinoid-B"| SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "Carcinoid-A1"],
-SdMap_Umap_refACP$SD_mean[SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "Carcinoid-A2"| SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "Carcinoid-B"| SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "Carcinoid-A1"],
-paired = T, alternative = 'less')
 
 # MAp main graphic #
 ggarrange(pSD_Main_refACP,pS02297L, pS02297ACPH,  labels = c("A", "B", "C"), nrow = 1)

@@ -1,4 +1,3 @@
-# V Git 
 # Librairies --------------------------------------------------------------
 library(umap)
 library(ggplot2)
@@ -17,7 +16,7 @@ library(RColorBrewer)
 library(cluster)
 library(eulerr)
 library(ade4)
-source('DR_Method/Dimensionality_reduction_comparison_metrics.R')
+source('../DR_Method/Dimensionality_reduction_comparison_metrics.R')
 library(gganimate)
 library(gifski) # for gganimate
 library(png) # for gganimate
@@ -28,8 +27,8 @@ theme_set(theme_bw())
 
 ## Import data -------------------------------------------------------------
 
-Attributes_UMAP_TCACLCNECSCL <- read.table("/data/Attributes_UMAP_TCACLCNECSCLC.tsv",sep='\t' , header = T)
-vst50_TCACLCNECSCLC<- read.table("/data/VST_nosex_50pc_TCACLCNECSCLC.txt", header = T)
+Attributes_UMAP_TCACLCNECSCL <- read.table("Attributes_UMAP_TCACLCNECSCLC.tsv",sep='\t' , header = T)
+vst50_TCACLCNECSCLC<- read.table("../data/VST_nosex_50pc_TCACLCNECSCLC.txt", header = T)
 vst50_TCACLCNECSCLC <- data.frame(t(vst50_TCACLCNECSCLC ))
 vst50_TCACLCNECSCLC_designRD <- vst50_TCACLCNECSCLC # Structure match with the one require for PCA and UMAP
 vst50_TCACLCNECSCLC_designRD <- vst50_TCACLCNECSCLC_designRD[- which(rownames(vst50_TCACLCNECSCLC_designRD) == "S00716_A"|rownames(vst50_TCACLCNECSCLC_designRD) == "S02322_B"),]
@@ -61,20 +60,42 @@ p2_standard_nn121 <- p2_standard_nn121 +  labs(title="", y="dim2", x="dim1")  +
 p2_standard_nn121
 
 ### NN 15
- 
+
 umap15 = umap(vst50_TCACLCNECSCLC_designRD)
 umap15_res_df <- as.data.frame(umap15$layout)
 umap15_res_df  = setDT(umap15_res_df , keep.rownames = TRUE)[]
 colnames(umap15_res_df)[1] <- "Sample_ID"
 
+
+### NN 112
+
+umap112 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 112)
+umap112_res_df <- as.data.frame(umap112$layout)
+umap112_res_df  = setDT(umap112_res_df , keep.rownames = TRUE)[]
+colnames(umap112_res_df)[1] <- "Sample_ID"
+
+
+### NN 135
+
+umap135 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 135  )
+umap135_res_df <- as.data.frame(umap135$layout)
+umap135_res_df  = setDT(umap135_res_df , keep.rownames = TRUE)[]
+colnames(umap135_res_df)[1] <- "Sample_ID"
+
+### NN 150
+
+umap150 = umap(vst50_TCACLCNECSCLC_designRD)
+umap150_res_df <- as.data.frame(umap150$layout)
+umap150_res_df  = setDT(umap150_res_df , keep.rownames = TRUE)[]
+colnames(umap150_res_df)[1] <- "Sample_ID"
+
 ### NN 208
-umap208_res_df <- read.table("data/Coords_umap_nn208.tsv")
-colnames(umap208_res_df) <- c("Sample_ID", "V1", "V2") 
-#umap208 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 208)
-#umap208_res_df <- as.data.frame(umap208$layout)
-#umap208_res_df  = setDT(umap208_res_df , keep.rownames = TRUE)[]
-#colnames(umap208_res_df)[1] <- "Sample_ID"
-#umap208_res_df <- umap208_res_df[order(umap208_res_df$Sample_ID),]
+
+umap208 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 208)
+umap208_res_df <- as.data.frame(umap208$layout)
+umap208_res_df  = setDT(umap208_res_df , keep.rownames = TRUE)[]
+colnames(umap208_res_df)[1] <- "Sample_ID"
+umap208_res_df <- umap208_res_df[order(umap208_res_df$Sample_ID),]
 
 p2_standard_nn208 <- ggplot(umap208_res_df, aes(x=V1, y=V2,  color=Attributes_UMAP_TCACLCNECSCL$Molecular_clusters)) +  geom_point(size=4, alpha =.8) + scale_color_brewer(palette="Spectral") +labs(title= "208")+ theme(legend.title = element_blank()) + theme(legend.position = "none")
 p2_standard_nn208 <- p2_standard_nn208 +  labs(title="", y="dim2", x="dim1")  +
@@ -207,7 +228,7 @@ p5D2d4d  <- p5D2d4d  +  labs(title="",   y="PC4 (3.6%)", x="PC2 (9.7%)") +
          axis.text.y=element_text(size=12),
          legend.text = element_text(size = 14) ,
          legend.title = element_blank())  # Y axis text # Y axis text
- 
+
 
 p5D2d5d <- ggplot(acp_5D_li_df, aes(x=Axis2 , y=Axis5,  color=Attributes_UMAP_TCACLCNECSCL$Molecular_clusters)) +  geom_point(size=4, alpha=0.8)+
   scale_color_brewer(palette="Spectral")  + scale_shape_manual(values = c(16, 7, 15,17,8 ))#wes_palette(n=5, name="FantasticFox1")
@@ -321,7 +342,7 @@ pKmeans <- pKmeans +  labs(title="", y="", x="")  +
 
 umap208_res_df_V2$Molecular_clusters <- as.character(umap208_res_df_V2$Molecular_clusters)
 Molecular_clusters_6g <- unlist(lapply( 1:length( umap208_res_df_V2$Molecular_clusters), function(i){
-
+  
   if (umap208_res_df_V2$Molecular_clusters[i] == "SCLC/LCNEC-like"){
     "LCNEC/TypeI"
   }
@@ -331,7 +352,7 @@ Molecular_clusters_6g <- unlist(lapply( 1:length( umap208_res_df_V2$Molecular_cl
   else{
     umap208_res_df_V2$Molecular_clusters[i]
   }
-
+  
 }))
 
 x = table(umap_nn208_C6$cluster,Molecular_clusters_6g ); x
@@ -419,7 +440,7 @@ pKmeans_ACP <- pKmeans_ACP +  labs(title="", y="", x="")  +
 ### Kmeans confusion matrix -------------------------------------------------
 acp_5D_li_df_vkmeans$Molecular_clusters <- as.character(acp_5D_li_df_vkmeans$Molecular_clusters)
 Molecular_clusters_6g_ACP <- unlist(lapply( 1:length(acp_5D_li_df_vkmeans$Molecular_clusters), function(i){
-
+  
   if (acp_5D_li_df_vkmeans$Molecular_clusters[i] == "SCLC/LCNEC-like"){
     "LCNEC/TypeI"
   }
@@ -429,7 +450,7 @@ Molecular_clusters_6g_ACP <- unlist(lapply( 1:length(acp_5D_li_df_vkmeans$Molecu
   else{
     acp_5D_li_df_vkmeans$Molecular_clusters[i]
   }
-
+  
 }))
 
 
@@ -506,7 +527,7 @@ Seq_graph_by_k_vfig  <- function (data_Seq, Names=NULL, list_col=NULL, data_diff
       data_diff_mean_k <- cbind(data_diff_mean_k, mean_by_k)
     }
     colnames(data_diff_mean_k)[2:length(colnames(data_diff_mean_k))] <- colnames(data_Seq)[3:dim(data_Seq)[2]]
-
+    
     if (is.null(Names) == FALSE){
       if (length(Names) != (dim(data_Seq)[2] - 3)){
         warning("The list of names gave as input doesn't match with the number of curve.")
@@ -515,11 +536,11 @@ Seq_graph_by_k_vfig  <- function (data_Seq, Names=NULL, list_col=NULL, data_diff
         colnames(data_diff_mean_k)[2:length(colnames(data_diff_mean_k))] <- Names
       }
     }
- 
+    
   }
   else{
     data_diff_mean_k <- data_diff_mean_K
-
+    
   }
   # Normalisation
   if (norm == T){
@@ -533,9 +554,9 @@ Seq_graph_by_k_vfig  <- function (data_Seq, Names=NULL, list_col=NULL, data_diff
     myylab <- TeX("Normalized $\\bar{SD}_k$")
   }
   else{
-   data_diff_mean_kRef <- data_diff_mean_k
-   myylab <- TeX("$\\bar{SD}_k$")
-   
+    data_diff_mean_kRef <- data_diff_mean_k
+    myylab <- TeX("$\\bar{SD}_k$")
+    
   }
   if (log == FALSE){
     data_diff_mean_kRef_graph <- data.frame('k' = data_diff_mean_kRef$k , 'diff_seq' =( data_diff_mean_kRef[, 2]), 'Method' = rep(as.character(colnames(data_diff_mean_kRef)[2]), length(data_diff_mean_kRef$k)))
@@ -608,6 +629,15 @@ umap15_res_df$Sample_ID <- as.character(umap15_res_df$Sample_ID)
 umap15_res_df <- umap15_res_df[order(umap15_res_df$Sample_ID),]
 head(umap15_res_df)
 
+
+umap112_res_df$Sample_ID <- as.character(umap112_res_df$Sample_ID)
+umap112_res_df <- umap112_res_df[order(umap112_res_df$Sample_ID),]
+head(umap112_res_df)
+
+umap135_res_df$Sample_ID <- as.character(umap135_res_df$Sample_ID)
+umap135_res_df <- umap135_res_df[order(umap135_res_df$Sample_ID),]
+head(umap135_res_df)
+
 umap121_res_df$Sample_ID <- as.character(umap121_res_df$Sample_ID)
 umap121_res_df <- umap121_res_df[order(umap121_res_df$Sample_ID),]
 head(umap121_res_df)
@@ -620,15 +650,15 @@ vst50_TCACLCNECSCLC_designRDSAMPLE <- rownames(vst50_TCACLCNECSCLC_designRD)
 vst50_TCACLCNECSCLC_VSamp <- cbind("Sample_ID" = vst50_TCACLCNECSCLC_designRDSAMPLE, vst50_TCACLCNECSCLC_designRD)
 vst50_TCACLCNECSCLC_VSamp <- vst50_TCACLCNECSCLC_VSamp[order(vst50_TCACLCNECSCLC_VSamp$Sample_ID),]
 vst50_TCACLCNECSCLC_VSamp[1:10,1:10]
-List_projection <- list(data.frame(acp_fig1_li_df), data.frame(acp_5D_li_df),data.frame(umap15_res_df[,1:3]), data.frame(umap121_res_df[,1:3]), data.frame(umap208_res_df[,1:3]))
+List_projection <- list(data.frame(acp_fig1_li_df), data.frame(acp_5D_li_df),data.frame(umap15_res_df[,1:3]),data.frame(umap112_res_df[,1:3]) ,data.frame(umap121_res_df[,1:3]), data.frame(umap135_res_df[,1:3]),data.frame(umap208_res_df[,1:3]))
 str(List_projection)
 
 
 ## SD calculation ---------------------------------------------------------
 
-#Main_SQ_res_NN <- Seq_main(l_data = List_projection , dataRef = data.frame(vst50_TCACLCNECSCLC_VSamp) , listK = seq(from= 1, to = 208, by = 5), colnames_res_df = c("pca_2D", "pca_5D","umap_md=0.1_nn=15", "umap_md=0.1_nn=121", "umap_md=0.1_nn=208")  , filename = NULL , graphics = TRUE, stats = TRUE) #
+#Main_SQ_res_NN <- Seq_main(l_data = List_projection , dataRef = data.frame(vst50_TCACLCNECSCLC_VSamp) , listK = seq(from= 1, to = 208, by = 5), colnames_res_df = c("pca_2D", "pca_5D","umap_md=0.1_nn=15", "umap_md=0.1_nn=112","umap_md=0.1_nn=121", "umap_md=0.1_nn=135","umap_md=0.1_nn=208")  , filename = NULL , graphics = TRUE, stats = TRUE) #
 #saveRDS(Main_SQ_res_NN, "Main_SQ_res_NN.rds")
-Main_SQ_res_NN <- readRDS("/RData/Main_SQ_res_NN.rds")
+Main_SQ_res_NN <- readRDS("Main_SQ_res_NN.rds")
 head(Main_SQ_res_NN[[1]])
 colnames(Main_SQ_res_NN[[1]]) <- c("Sample_ID", "K", "PCA 2D", "PCA 4D", "UMAP nn = 15", "UMAP nn = 121", "UMAP nn = 208")
 
@@ -707,10 +737,10 @@ tab <- ggtexttable(Main_stat_table,
                    theme = ttheme(
                      colnames.style = colnames_style(face = "bold"),
                      rownames.style = rownames_style(face = "bold"))
-                   )
+)
 tab
 tab <- table_cell_bg(tab, row = 2, column = 2,
-                       fill="darkgray")
+                     fill="darkgray")
 tab <- table_cell_bg(tab, row = 3, column = 3,
                      fill="darkgray")
 tab <- table_cell_bg(tab, row = 4, column = 4,
@@ -733,7 +763,7 @@ ggarrange(ggarrange(sd_main, sd_main_norm, sd_main_norm_legend, ncol = 3, widths
 
 #Main_SQ_res_NN_20 <- Seq_main(l_data = List_projection , dataRef = data.frame(vst50_TCACLCNECSCLC_VSamp) , listK = seq(from= 1, to = 20, by = 1), colnames_res_df = c("pca_2D", "pca_5D","umap_md=0.1_nn=15", "umap_md=0.1_nn=121", "umap_md=0.1_nn=208")  , filename = NULL , graphics = TRUE, stats = TRUE) #
 #saveRDS(Main_SQ_res_NN_20, "Main_SQ_res_NN_20.rds")
-Main_SQ_res_NN_20 <- readRDS("/RData/Main_SQ_res_NN_20.rds")
+Main_SQ_res_NN_20 <- readRDS("Main_SQ_res_NN_20.rds")
 
 Main_SQ_res_NN_20v2 <- Main_SQ_res_NN_20[[1]][,1:2]
 Main_SQ_res_NN_20v2 <- cbind(Main_SQ_res_NN_20v2,  Main_SQ_res_NN_20[[1]][,4:dim( Main_SQ_res_NN_20[[1]])[2]] )
@@ -747,8 +777,8 @@ seq_local
 
 pwt_df <- data.frame('mean_seq' = Main_SQ_res_NN_20[[2]][, 2], 'method'= rep(paste(colnames(Main_SQ_res_NN_20[[2]])[2], 2, sep = ""), dim(Main_SQ_res_NN_20[[2]])[1]))
 for (i in 3:dim(Main_SQ_res_NN_20[[2]])[2]){
-   c_df <- data.frame('mean_seq' = Main_SQ_res_NN_20[[2]][, i], 'method'=rep(paste(colnames(Main_SQ_res_NN_20[[2]])[i], i, sep = ""), dim(Main_SQ_res_NN_20[[2]])[1]))
-   pwt_df <- rbind(pwt_df, c_df )
+  c_df <- data.frame('mean_seq' = Main_SQ_res_NN_20[[2]][, i], 'method'=rep(paste(colnames(Main_SQ_res_NN_20[[2]])[i], i, sep = ""), dim(Main_SQ_res_NN_20[[2]])[1]))
+  pwt_df <- rbind(pwt_df, c_df )
 }
 paired_test_m_BILAT  <- pairwise.wilcox.test(pwt_df$mean_seq, p.adj = "holm", pwt_df$method,    paired = TRUE, alternative = 'two.sided')$p.value ;    
 paired_test_m_BILAT  <- as.matrix(paired_test_m_BILAT)
@@ -809,18 +839,18 @@ UmapS02297 <- merge(umap208_res_df, dist1S02297,  by= "Sample_ID")
 pS02297L <- ggplot(UmapS02297, aes(x=V1, y=V2,  color=rank, label =UmapS02297$Sample_ID)) +  geom_point(size=4, alpha =.8) + scale_color_distiller(palette = "Spectral")
 pS02297L <- pS02297L + geom_point(aes(x = UmapS02297$V1[which(UmapS02297$Sample_ID == "S02297")] , y =  UmapS02297$V2[which(UmapS02297$Sample_ID == "S02297")] ), size=4, col = "black")   +
   geom_text(aes( UmapS02297$V1[ UmapS02297$Sample_ID== "S02297"],UmapS02297$V2[ UmapS02297$Sample_ID== "S02297"], label = UmapS02297$Sample_ID[ UmapS02297$Sample_ID== "S02297"]) , col = 'black' , hjust=0, vjust=0 )+ 
-    labs(title="", 
-          y=TeX("dim2"), x="dim1") +
+  labs(title="", 
+       y=TeX("dim2"), x="dim1") +
   theme( legend.position = "bottom",
-    plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
-    plot.subtitle =element_text(size=14, hjust=0.5),
-    plot.caption =element_text(size=12,  hjust=0.5),
-    axis.title.x=element_text(size=16),  # X axis title
-    axis.title.y=element_text(size=16),  # Y axis title
-    axis.text.x=element_text(size=14),  # X axis text
-    axis.text.y=element_text(size=14),
-    legend.text = element_text(size = 10) ,
-    legend.title = element_blank())#+  guides(col = guide_legend( ncol = 2))  # Y axis text
+         plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
+         plot.subtitle =element_text(size=14, hjust=0.5),
+         plot.caption =element_text(size=12,  hjust=0.5),
+         axis.title.x=element_text(size=16),  # X axis title
+         axis.title.y=element_text(size=16),  # Y axis title
+         axis.text.x=element_text(size=14),  # X axis text
+         axis.text.y=element_text(size=14),
+         legend.text = element_text(size = 10) ,
+         legend.title = element_blank())#+  guides(col = guide_legend( ncol = 2))  # Y axis text
 pS02297L
 
 
@@ -835,7 +865,7 @@ str(List_projection)
 #Main_SQ_res_NN_refACP <- Seq_main(l_data = List_projection , dataRef = data.frame(acp_5D_li_df) , listK = seq(from= 1, to = 208, by = 5), colnames_res_df = c( "umap_md=0.1_nn=208")  , filename = NULL , graphics = TRUE, stats = TRUE) #
 #saveRDS(Main_SQ_res_NN_refACP, "Main_SQ_res_NN_refACP.rds")
 
-Main_SQ_res_NN_refACP <- readRDS("/RData/Main_SQ_res_NN_refACP.rds")
+Main_SQ_res_NN_refACP <- readRDS("Main_SQ_res_NN_refACP.rds")
 
 Sd_map_df_refACP <- data.frame("Sample_ID" = Main_SQ_res_NN_refACP$Seq_df$Sample_ID, "k" = Main_SQ_res_NN_refACP$Seq_df$K , "UMAP208" = Main_SQ_res_NN_refACP$Seq_df$`umap_md=0.1_nn=208` )
 sd_map_lnen_pca <- SD_map_f(Sd_map_df_refACP , umap208_res_df, "bottom")
@@ -872,6 +902,19 @@ pS02297ACPH <- pS02297ACPH + geom_point(aes(x = UmapS02297ACPH$V1[which(UmapS022
          legend.title = element_blank())#+  guides(col = guide_legend( ncol = 2))  # Y axis text
 
 
+# Some statistics --------------------------------------------------------
+
+t.test(SdMap_Umap$SD_mean[SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "LCNEC/NA"| SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "LCNEC/TypeII"| SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "LCNEC/TypeI"|  SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "SCLC/LCNEC-like"|
+                            SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "SCLC/SCLC-like" ],
+       
+       SdMap_Umap_refACP$SD_mean[SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "LCNEC/NA"| SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "LCNEC/TypeII"| SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "LCNEC/TypeI"|  SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "SCLC/LCNEC-like"|
+                                   SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "SCLC/SCLC-like" ], paired = T, alternative = "greater")
+
+
+
+t.test(SdMap_Umap$SD_mean[SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "Carcinoid-A2"| SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "Carcinoid-B"| SdMap_Umap$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "Carcinoid-A1"],
+       SdMap_Umap_refACP$SD_mean[SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "Carcinoid-A2"| SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "Carcinoid-B"| SdMap_Umap_refACP$`Attributes_UMAP_TCACLCNECSCL$Molecular_clusters` == "Carcinoid-A1"],
+       paired = T, alternative = 'less')
 
 # MAp main graphic #
 ggarrange(pSD_Main_refACP,pS02297L, pS02297ACPH,  labels = c("A", "B", "C"), nrow = 1)
@@ -885,7 +928,7 @@ str(List_projection)
 length(List_projection)
 #Main_CP_res_NN <- CP_main(l_data = List_projection , list_K = c(seq(from= 1, to = 208, by = 5),208) , dataRef =  data.frame(vst50_TCACLCNECSCLC_VSamp) , colnames_res_df = c("pca_2D", "pca_5D","umap_md=0.1_nn=15", "umap_md=0.1_nn=121", "umap_md=0.1_nn=208") , filename = NULL , graphics = TRUE, stats = TRUE)
 #saveRDS(Main_CP_res_NN , "Main_CP_res_NN.rds")
-Main_CP_res_NN <- readRDS('/RData/Main_CP_res_NN.rds')
+Main_CP_res_NN <- readRDS('Main_CP_res_NN.rds')
 Main_CP_res_NN$Graphic
 
 
@@ -955,7 +998,7 @@ CP_graph_by_k_VFIG  <-function (data_CP,  ref_CP_data, Names=NULL, list_col=NULL
                                                         axis.text.y=element_text(size=14),
                                                         legend.text = element_text(size = 14) ,
                                                         legend.title = element_blank())
-      }
+  }
   return(p)
 }
 
@@ -999,7 +1042,7 @@ colnames(paired_Ttest_m_matg_LESS) <- c("pca 2D","pca 5D", "umap nn = 15","umap 
 rownames(paired_Ttest_m_matg_LESS) <- c("pca 5D", "umap nn = 15","umap nn = 121", "umap nn = 208" )
 paired_Ttest_m_matg_LESS <-  format(paired_Ttest_m_matg_LESS , scientific=TRUE,digits=3)
 table_globale_LESS <- ggtexttable(paired_Ttest_m_matg_LESS , rows =rownames(paired_Ttest_m_matg_LESS),
-                                     theme = ttheme("classic"))+ labs(title = "Alternative less")
+                                  theme = ttheme("classic"))+ labs(title = "Alternative less")
 table_globale_LESS
 
 ggarrange(table_globale_BILAT , table_globale_GREATER, table_globale_LESS, nrow = 3)
@@ -1011,7 +1054,7 @@ CP_df_res_K208 <- Main_CP_res_NN[[1]][Main_CP_res_NN[[1]]$K == 208,]
 CP_df_res_K208 <- CP_df_res_K208[order(CP_df_res_K208$Sample_ID),]
 pUMAP_CP208 <- ggplot(umap208_res_df, aes(x=V1, y=V2,  color=(CP_df_res_K208$`umap_md=0.1_nn=208`/max(CP_df_res_K208$`umap_md=0.1_nn=208`)))) +  geom_point(size=4, alpha =.8) + scale_color_distiller(palette = "Spectral")
 pUMAP_CP208 <- pUMAP_CP208 +  labs(title="", 
-                             y=TeX("dim2"), x="dim1") +
+                                   y=TeX("dim2"), x="dim1") +
   theme( legend.position = "right",
          plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
          plot.subtitle =element_text(size=14, hjust=0.5),
@@ -1032,7 +1075,7 @@ CP_df_res_K208 <- CP_df_res_K208[order(CP_df_res_K208$Sample_ID),]
 
 pgenes_CP208 <- ggplot(umap208_res_df, aes(x=V1, y=V2,  color=CP_df_res_K208$REF/max(CP_df_res_K208$REF))) +  geom_point(size=4, alpha =.8) + scale_color_distiller(palette = "Spectral")
 pgenes_CP208 <- pgenes_CP208  +  labs(title="", 
-                                   y=TeX("dim2"), x="dim1") +
+                                      y=TeX("dim2"), x="dim1") +
   theme( legend.position ="left",
          plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
          plot.subtitle =element_text(size=14, hjust=0.5),
@@ -1104,7 +1147,7 @@ vst50_TCACLCNECSCLC_VSamp <- vst50_TCACLCNECSCLC_VSamp[order(vst50_TCACLCNECSCLC
 #saveRDS(MI_foreach, 'MI_foreach108.rds')
 # 3h30 !
 
-MI_foreachR <- readRDS("/RData/MI_foreach0730.rds")
+MI_foreachR <- readRDS("MI_foreach0730.rds")
 
 
 # Moran index overlapping between lists  -----------------------------------
@@ -1184,17 +1227,17 @@ p_overlap <- p_overlap + geom_point(aes(seq(1:6398),  y=PCA5D_UMAP208_GeneExprMa
 p_overlap <- p_overlap + geom_line(aes(seq(1:6398),  y=Expected, colour="Expected"), size = 1)
 p_overlap <- p_overlap +  labs(title="", 
                                y="Overlapping %", x="N", caption = "") + 
-   scale_colour_manual(values=cols, labels =c("Expected", "PCA 5D - GeneExprMat","PCA 5D - UMAP 208 - GeneExprMat",  "PCA5D - UMAP208", "UMAP 208 - GeneExprMat")) +
+  scale_colour_manual(values=cols, labels =c("Expected", "PCA 5D - GeneExprMat","PCA 5D - UMAP 208 - GeneExprMat",  "PCA5D - UMAP208", "UMAP 208 - GeneExprMat")) +
   theme( legend.position =  "bottom",
-    plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
-    plot.subtitle =element_text(size=14, hjust=0.5),
-    plot.caption =element_text(size=12,  hjust=0.5),
-    axis.title.x=element_text(size=16),  # X axis title
-    axis.title.y=element_text(size=16),  # Y axis title
-    axis.text.x=element_text(size=14),  # X axis text
-    axis.text.y=element_text(size=14),
-    legend.text = element_text(size = 14) ,
-    legend.title = element_blank())  + geom_vline(xintercept = 1000, linetype="dotted") +  guides(col = guide_legend( ncol = 2))  # Y axis text # Y axis text
+         plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
+         plot.subtitle =element_text(size=14, hjust=0.5),
+         plot.caption =element_text(size=12,  hjust=0.5),
+         axis.title.x=element_text(size=16),  # X axis title
+         axis.title.y=element_text(size=16),  # Y axis title
+         axis.text.x=element_text(size=14),  # X axis text
+         axis.text.y=element_text(size=14),
+         legend.text = element_text(size = 14) ,
+         legend.title = element_blank())  + geom_vline(xintercept = 1000, linetype="dotted") +  guides(col = guide_legend( ncol = 2))  # Y axis text # Y axis text
 
 
 p_ovelap_zoom <- ggplot() 
@@ -1204,18 +1247,18 @@ p_ovelap_zoom <- p_ovelap_zoom + geom_point(aes(seq(1:1050),  y=PCA5D_UMAP208_ov
 p_ovelap_zoom <- p_ovelap_zoom + geom_point(aes(seq(1:1050),  y=PCA5D_UMAP208_GeneExprMat_overlap[1:1050], colour="PCA 5D - UMAP 208 - GeneExprMat"), size = 0.1)
 p_ovelap_zoom <- p_ovelap_zoom + geom_line(aes(seq(1:1050),  y=Expected[1:1050], colour="Expected"), size = 1)
 p_ovelap_zoom <- p_ovelap_zoom +  labs(title="", 
-                               y="", x="", caption = "") + 
+                                       y="", x="", caption = "") + 
   scale_colour_manual(values=cols) +
   theme( legend.position = "none",
-    plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
-    plot.subtitle =element_text(size=14, hjust=0.5),
-    plot.caption =element_text(size=12,  hjust=0.5),
-    axis.title.x=element_text(size=16),  # X axis title
-    axis.title.y=element_text(size=16),  # Y axis title
-    axis.text.x=element_text(size=14),  # X axis text
-    axis.text.y=element_text(size=14),
-    legend.text = element_text(size = 14) ,
-    legend.title = element_blank())  + 
+         plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
+         plot.subtitle =element_text(size=14, hjust=0.5),
+         plot.caption =element_text(size=12,  hjust=0.5),
+         axis.title.x=element_text(size=16),  # X axis title
+         axis.title.y=element_text(size=16),  # Y axis title
+         axis.text.x=element_text(size=14),  # X axis text
+         axis.text.y=element_text(size=14),
+         legend.text = element_text(size = 14) ,
+         legend.title = element_blank())  + 
   geom_vline(xintercept = 1000, linetype="dashed")# Y axis text
 
 
@@ -1228,27 +1271,27 @@ t.test(PCA5D_GeneExprMat_overlap, UMAP208_GeneExprMat_overlap, paired = T, alter
 
 first_cor_list = list("PCA5D" = PCA5D_order_genes[1:1000], "UMAP 208" = UMAP208_order_genes[1:1000], "GenesExprMat" =GeneExpr_order_genes[1:1000])
 
-  print(venn(first_cor_list, show.plot=FALSE))
+print(venn(first_cor_list, show.plot=FALSE))
 
 
-  library(VennDiagram)
-  FirstList <- list(PCA5D_order_genes1000, UMAP208_order_genes1000, GeneExpr_order_genes1000 )
-  venn(FirstList, show.plot=TRUE)
-  
-  library(eulerr)
-  
-  
-  MyVenn<- c(c(A = 11, B = 83, C = 37, 
-               "A&B" = 35, "A&C" = 9, "B&C"= 81,"A&B&C" = 873))
-  PEul2 <- plot(euler(MyVenn), labels = c("PCA 5D ", "UMAP \n nn = 208 ", "GenesExprMat"), fills = c("#5DC863FF", "#FDE725FF", "#21908CFF"),  quantities = TRUE, alpha= .6)
-  PEul2
-  
+library(VennDiagram)
+FirstList <- list(PCA5D_order_genes1000, UMAP208_order_genes1000, GeneExpr_order_genes1000 )
+venn(FirstList, show.plot=TRUE)
+
+library(eulerr)
+
+
+MyVenn<- c(c(A = 11, B = 83, C = 37, 
+             "A&B" = 35, "A&C" = 9, "B&C"= 81,"A&B&C" = 873))
+PEul2 <- plot(euler(MyVenn), labels = c("PCA 5D ", "UMAP \n nn = 208 ", "GenesExprMat"), fills = c("#5DC863FF", "#FDE725FF", "#21908CFF"),  quantities = TRUE, alpha= .6)
+PEul2
+
 ggarrange(p_overlap, NULL, PEul2, labels = c("A", "B",""), ncol = 3, widths = c(.7, .15 , .3))
 
 
 # MI_OTP Example ----------------------------------------------------------
 
-Embl_OTP ="ENSG00000171540.6"
+Embl_OTP = "ENSG00000171540.6"
 otp_df <- data.frame("Sample_ID" = vst50_TCACLCNECSCLC_VSamp$Sample_ID, "OTP" =  vst50_TCACLCNECSCLC_VSamp[,which(colnames(vst50_TCACLCNECSCLC_VSamp)== Embl_OTP)] )
 otp_df <- otp_df[order(otp_df$Sample_ID),]
 MI_OTP <- moran_I_main(l_coords_data = List_coords, spatial_data = data.frame(otp_df), listK= seq(1,207,1), nsim = 10, Stat=FALSE, Graph = TRUE, methods_name = c('PCA 5D','UMAP nn = 208', "GeneExprMat"))
@@ -1273,7 +1316,7 @@ OTPMap_df <- merge(umap208_res_df,otp_df, by = "Sample_ID")
 
 pOTPMap <- ggplot(OTPMap_df, aes(x=V1, y=V2,  color=OTP)) +  geom_point(size=4, alpha =.8) + scale_color_distiller(palette = "Spectral")
 pOTPMap <- pOTPMap+  labs(title="", 
-                              y=TeX("dim2"), x="dim1") +
+                          y=TeX("dim2"), x="dim1") +
   theme( 
     plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
     plot.subtitle =element_text(size=14, hjust=0.5),
@@ -1303,32 +1346,32 @@ MI_MKI67_plot$Methods <- as.character(MI_MKI67_plot$Methods)
 p_MKI671 <- ggplot(MI_MKI67_plot , aes(x=K_level, y=moranI, color= Methods )) + geom_line(aes( color=Methods )) + geom_point()+
   scale_color_manual(values =c("PCA 5D" = "#440154FF",  "UMAP nn = 208"  ="#FDE725FF" , "GeneExprMat" = "#21908CFF") , breaks= c("PCA 5D", "UMAP nn = 208", 'GeneExprMat' ) ,labels = c("PCA 5D", "UMAP nn = 208", "GenesExprMat"))# + scale_shape_manual(values = c(16, 7, 15,17,8 ))#wes_palette(n=5, name="FantasticFox1")
 p_MKI671 <- p_MKI671 +  labs(title="",   y="Moran Index", x="u") +theme( legend.position =  c(0.8,0.9),
-                                                                     plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
-                                                                     plot.subtitle =element_text(size=14, hjust=0.5),
-                                                                     plot.caption =element_text(size=12,  hjust=0.5),
-                                                                     axis.title.x=element_text(size=16),  # X axis title
-                                                                     axis.title.y=element_text(size=16),  # Y axis title
-                                                                     axis.text.x=element_text(size=14),  # X axis text
-                                                                     axis.text.y=element_text(size=14),
-                                                                     legend.text = element_text(size = 14) ,
-                                                                     legend.title = element_blank())  # Y axis text
+                                                                         plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
+                                                                         plot.subtitle =element_text(size=14, hjust=0.5),
+                                                                         plot.caption =element_text(size=12,  hjust=0.5),
+                                                                         axis.title.x=element_text(size=16),  # X axis title
+                                                                         axis.title.y=element_text(size=16),  # Y axis title
+                                                                         axis.text.x=element_text(size=14),  # X axis text
+                                                                         axis.text.y=element_text(size=14),
+                                                                         legend.text = element_text(size = 14) ,
+                                                                         legend.title = element_blank())  # Y axis text
 
 
 MKI67Map_df <- merge(umap208_res_df, MKI67_df, by = "Sample_ID")
 
 pMKI67Map <- ggplot(MKI67Map_df, aes(x=V1, y=V2,  color=MKI67)) +  geom_point(size=4, alpha =.8) + scale_color_distiller(palette = "Spectral")
 pMKI67Map <- pMKI67Map+  labs(title="", 
-                             y=TeX("dim2"), x="dim1") +
+                              y=TeX("dim2"), x="dim1") +
   theme( legend.position = c(0.2,0.2),
-    plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
-    plot.subtitle =element_text(size=14, hjust=0.5),
-    plot.caption =element_text(size=12,  hjust=0.5),
-    axis.title.x=element_text(size=16),  # X axis title
-    axis.title.y=element_text(size=16),  # Y axis title
-    axis.text.x=element_text(size=14),  # X axis text
-    axis.text.y=element_text(size=14),
-    legend.text = element_text(size = 14) ,
-    legend.title = element_blank())#+  guides(col = guide_legend( ncol = 2))  # Y axis text
+         plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
+         plot.subtitle =element_text(size=14, hjust=0.5),
+         plot.caption =element_text(size=12,  hjust=0.5),
+         axis.title.x=element_text(size=16),  # X axis title
+         axis.title.y=element_text(size=16),  # Y axis title
+         axis.text.x=element_text(size=14),  # X axis text
+         axis.text.y=element_text(size=14),
+         legend.text = element_text(size = 14) ,
+         legend.title = element_blank())#+  guides(col = guide_legend( ncol = 2))  # Y axis text
 
 pMKI67Map
 
@@ -1441,5 +1484,277 @@ umap_res_dfV2 <- umap_res_dfV2[complete.cases(umap_res_dfV2),]
 p <- ggplot(umap_res_dfV2 , aes(x=V1, y=V2,  color=Molecular_clusters)) +  geom_point()+
   scale_color_brewer(palette="Spectral") 
 p <- p + transition_time(nn)+labs(title = 'n_neighbors:{frame_time}')  + ease_aes('linear')
+
+
+
+# Consistancy of SD metric ------------------------------------------------
+
+
+set.seed(1564404882)
+
+
+## Import data -------------------------------------------------------------
+
+Attributes_UMAP_TCACLCNECSCL <- read.table("Attributes_UMAP_TCACLCNECSCLC.tsv",sep='\t' , header = T)
+vst50_TCACLCNECSCLC<- read.table("../data/VST_nosex_50pc_TCACLCNECSCLC.txt", header = T)
+vst50_TCACLCNECSCLC <- data.frame(t(vst50_TCACLCNECSCLC ))
+vst50_TCACLCNECSCLC_designRD <- vst50_TCACLCNECSCLC # Structure match with the one require for PCA and UMAP
+vst50_TCACLCNECSCLC_designRD <- vst50_TCACLCNECSCLC_designRD[- which(rownames(vst50_TCACLCNECSCLC_designRD) == "S00716_A"|rownames(vst50_TCACLCNECSCLC_designRD) == "S02322_B"),]
+rownames(vst50_TCACLCNECSCLC_designRD)[which(rownames(vst50_TCACLCNECSCLC_designRD) == "S02322_A")] <- "S02322.R1"
+
+acp_2D <- dudi.pca(vst50_TCACLCNECSCLC_designRD, center = T , scale = F , scannf = F , nf=2) #
+acp_fig1_li_df =  as.data.frame(acp_2D$li)
+acp_fig1_li_df = setDT(acp_fig1_li_df, keep.rownames = TRUE)[]
+colnames(acp_fig1_li_df)[1]<-'Sample_ID'
+acp_fig1_li_df <- acp_fig1_li_df[order(acp_fig1_li_df$Sample_ID),]
+
+acp_5D <- dudi.pca(vst50_TCACLCNECSCLC_designRD, center = T , scale = F , scannf = F , nf=5) #
+acp_5D_li_df =  as.data.frame(acp_5D$li)
+acp_5D_li_df  = setDT(acp_5D_li_df , keep.rownames = TRUE)[]
+colnames(acp_5D_li_df )[1]<-'Sample_ID'
+acp_5D_li_df <- acp_5D_li_df[order(acp_5D_li_df$Sample_ID),]
+
+
+vst50_TCACLCNECSCLC_designRDSAMPLE <- rownames(vst50_TCACLCNECSCLC_designRD)
+vst50_TCACLCNECSCLC_VSamp <- cbind("Sample_ID" = vst50_TCACLCNECSCLC_designRDSAMPLE, vst50_TCACLCNECSCLC_designRD)
+vst50_TCACLCNECSCLC_VSamp <- vst50_TCACLCNECSCLC_VSamp[order(vst50_TCACLCNECSCLC_VSamp$Sample_ID),]
+
+## UMAP Projections with repetitions --------------------------------------------------------
+
+###############################################################################
+#              BECAREFUL IT COULD BE LONG AROUND 9 hours with 4 cores         #
+###############################################################################
+# start_time <- Sys.time()
+# no_cores <- detectCores()
+# no_cores
+# cl <- makeCluster(no_cores)
+# registerDoParallel(cl)
+# Main_SQ_REP4 <-  foreach(i=1:100, .combine=c, .packages = c("umap", 'data.table', "ade4", "parallel", "doParallel", "cluster"))%dopar%{
+#   ### NN = 121 
+#   
+#   # #### Legends
+#   # umap121 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 121)
+#   # umap121_res_df <- as.data.frame(umap121$layout)
+#   # umap121_res_df  = setDT(umap121_res_df , keep.rownames = TRUE)[]
+#   # colnames(umap121_res_df)[1] <- "Sample_ID"
+#   # umap121_res_df <- umap121_res_df[order(umap121_res_df$Sample_ID),]
+#   # 
+#   # ### NN 15
+#   # 
+#   # umap15 = umap(vst50_TCACLCNECSCLC_designRD)
+#   # umap15_res_df <- as.data.frame(umap15$layout)
+#   # umap15_res_df  = setDT(umap15_res_df , keep.rownames = TRUE)[]
+#   # colnames(umap15_res_df)[1] <- "Sample_ID"
+#   # umap15_res_df <- umap15_res_df[order(umap15_res_df$Sample_ID),]
+#   # 
+#   # 
+#   # ### NN 89
+#   # 
+#   # umap89 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 89)
+#   # umap89_res_df <- as.data.frame(umap89$layout)
+#   # umap89_res_df  = setDT(umap89_res_df , keep.rownames = TRUE)[]
+#   # colnames(umap89_res_df)[1] <- "Sample_ID"
+#   # umap89_res_df <- umap89_res_df[order(umap89_res_df$Sample_ID),]
+#   # 
+#   # ### NN 208
+#   # 
+#   # umap208 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 208)
+#   # umap208_res_df <- as.data.frame(umap208$layout)
+#   # umap208_res_df  = setDT(umap208_res_df , keep.rownames = TRUE)[]
+#   # colnames(umap208_res_df)[1] <- "Sample_ID"
+#   # umap208_res_df <- umap208_res_df[order(umap208_res_df$Sample_ID),]
+#   
+#   
+#   umap34 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 34)
+#   umap34_res_df <- as.data.frame(umap34$layout)
+#   umap34_res_df  = setDT(umap34_res_df , keep.rownames = TRUE)[]
+#   colnames(umap34_res_df)[1] <- "Sample_ID"
+#   umap34_res_df <- umap34_res_df[order(umap34_res_df$Sample_ID),]
+#   
+#   List_projection <- list(data.frame(acp_5D_li_df), data.frame(umap34_res_df[,1:3]))
+#   
+#   
+#   #List_projection <- list(data.frame(acp_fig1_li_df), data.frame(acp_5D_li_df),data.frame(umap15_res_df[,1:3]), data.frame(umap89_res_df[,1:3]), data.frame(umap121_res_df[,1:3]),data.frame(umap208_res_df[,1:3]))
+#   
+#   #Main_SQ_res_NN <- Seq_main(l_data = List_projection , dataRef = data.frame(vst50_TCACLCNECSCLC_VSamp) , listK = seq(from= 1, to = 208, by = 10), colnames_res_df = c("pca_2D", "pca_5D","umap_md=0.1_nn=15", "umap_md=0.1_nn=89","umap_md=0.1_nn=121", "umap_md=0.1_nn=208")  , filename = NULL , graphics = FALSE, stats =FALSE) #
+#   Main_SQ_res_NN <- Seq_main(l_data = List_projection , dataRef = data.frame(vst50_TCACLCNECSCLC_VSamp) , listK = seq(from= 1, to = 208, by = 10), colnames_res_df = c("pca_5D","umap_md=0.1_nn=34")  , filename = NULL , graphics = FALSE, stats =FALSE) #
+#   Main_SQ_res_NN[[1]]
+# }
+# end_time <- Sys.time()
+# start_time - end_time
+# 
+# saveRDS(Main_SQ_REP4, "Main_SQ_REP4.rds")
+# saveRDS(Main_SQ_REP3, "Main_SQ_REP3.rds")
+
+
+# Importation of results --------------------------------------------------
+
+Main_SQ_REP_r <- readRDS("Main_SQ_REP3.rds")
+Main_SQ_REP_r34 <- readRDS("Main_SQ_REP4.rds")
+
+MEAN_SD_K_DF <- list()
+cu <- 1
+c34 <- 4
+for(i in seq(1,800,8)){
+  MAIN_SD_DF_c <- data.frame("Sample_ID" = Main_SQ_REP_r[i],"K" = Main_SQ_REP_r[i+1], "pca2D" = Main_SQ_REP_r[i+2], "pca5D" = Main_SQ_REP_r[i+3],
+                             "Umap_nn15" = Main_SQ_REP_r[i+4], "Umap_nn34" =  Main_SQ_REP_r34[[c34]] , "Umap_nn89" = Main_SQ_REP_r[i+5],
+                             "Umap_nn121" = Main_SQ_REP_r[i+6], "Umap_nn208" = Main_SQ_REP_r[i+7])
+  ag_df <- aggregate(MAIN_SD_DF_c[, 3:9], list(MAIN_SD_DF_c$K), mean)
+  colnames(ag_df) <- c("K",  'pca_2D', 'pca_5D',  'umap_nn.15', "Umap_nn34" ,'umap_nn.89', "umap_nn.121","umap_nn.208" )
+  MEAN_SD_K_DF[[cu]] <- ag_df 
+  cu <- cu + 1
+  c34 <- c34 + 4
+}
+
+MEAN_K_SD_b <- data.frame(MEAN_SD_K_DF[[1]])
+for (i in  2:100){
+  MEAN_K_SD_b <- rbind(MEAN_K_SD_b, as.data.frame(MEAN_SD_K_DF[[2]]))
+}
+
+MEAN_SD <- aggregate(MEAN_K_SD_b[, 2:8], list(MEAN_K_SD_b$K), mean)
+colnames(MEAN_SD)[1] <- 'K'
+
+MEAN_SD_FUSION <-  melt(data = MEAN_SD, id.vars = "K")
+
+
+SD_SD <- aggregate(MEAN_K_SD_b[, 2:8], list(MEAN_K_SD_b$K), sd)
+SD_SD_FUSION <-  melt(data = SD_SD, id.vars = "Group.1")
+colnames(SD_SD_FUSION)[3] <- "sd"
+
+MEAN_SD_FUSION  <- cbind(MEAN_SD_FUSION, "sd" = SD_SD_FUSION$sd)
+
+
+pl <- ggplot(MEAN_SD_FUSION, aes(x=K, y=value,   color=variable)) + geom_line() + geom_point()+
+  scale_color_viridis(discrete=TRUE) +
+  geom_errorbar(aes(ymin=value-sd, ymax=value+sd)) 
+p_legend <- get_legend(pl)
+
+p <- ggplot(MEAN_SD_FUSION, aes(x=K, y=value,   color=variable)) + geom_line() + geom_point()+
+  scale_color_viridis(discrete=TRUE) +
+  geom_errorbar(aes(ymin=value-sd, ymax=value+sd)) 
+p <- p +  labs(title="", 
+               y="SD", x= "k") +
+  theme( legend.position= 'none' ,#
+         plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
+         plot.subtitle =element_text(size=14, hjust=0.5),
+         plot.caption =element_text(size=12,  hjust=0.5),
+         axis.title.x=element_text(size=16, face = "italic"),  # X axis title
+         axis.title.y=element_text(size=16),  # Y axis title
+         axis.text.x=element_text(size=14),  # X axis text
+         axis.text.y=element_text(size=14),
+         legend.text = element_text(size = 14) ,
+         legend.title = element_blank())
+print(p)
+
+# Normalize plot
+
+MEAN_K_SD_b_norm <- data.frame("K" = MEAN_K_SD_b[,1])
+for (i in 2:dim(MEAN_K_SD_b)[2]){
+  MEAN_K_SD_b_norm[ ,i] <- (MEAN_K_SD_b[,3] - MEAN_K_SD_b[,i])/(MEAN_K_SD_b[,3] - MEAN_K_SD_b[,2])
+}
+colnames(MEAN_K_SD_b_norm) <- colnames(MEAN_K_SD_b)
+
+MEAN_SD_norm <- aggregate(MEAN_K_SD_b_norm[, 2:8], list(MEAN_K_SD_b_norm$K), mean)
+colnames(MEAN_SD_norm)[1] <- 'K'
+
+MEAN_SD_FUSION_norm <-  melt(data = MEAN_SD_norm, id.vars = "K")
+
+SD_SD_norm <- aggregate(MEAN_K_SD_b_norm[, 2:8], list(MEAN_K_SD_b_norm$K), sd)
+SD_SD_FUSION_norm <-  melt(data = SD_SD_norm, id.vars = "Group.1")
+colnames(SD_SD_FUSION_norm)[3] <- "sd"
+
+MEAN_SD_FUSION_norm  <- cbind(MEAN_SD_FUSION_norm, "sd" = SD_SD_FUSION_norm$sd)
+
+pn <- ggplot(MEAN_SD_FUSION_norm, aes(x=K, y=value,   color=variable)) + geom_line() + geom_point()+
+  scale_color_viridis(discrete=TRUE) +
+  geom_errorbar(aes(ymin=value-sd, ymax=value+sd)) 
+pn <- pn +  labs(title="", 
+                 y="SD", x= "k") +
+  theme( legend.position= 'none' ,#
+         plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
+         plot.subtitle =element_text(size=14, hjust=0.5),
+         plot.caption =element_text(size=12,  hjust=0.5),
+         axis.title.x=element_text(size=16, face = "italic"),  # X axis title
+         axis.title.y=element_text(size=16),  # Y axis title
+         axis.text.x=element_text(size=14),  # X axis text
+         axis.text.y=element_text(size=14),
+         legend.text = element_text(size = 14) ,
+         legend.title = element_blank())#+  guides(col = guide_legend( ncol = 2))  # Y axis text
+print(pn)
+
+# Statistics
+
+Mean_K_DF_STAT <- data.frame("SD_m" = MEAN_K_SD_b[,2], "Method" = rep(colnames( MEAN_K_SD_b)[2], dim(MEAN_K_SD_b)[1]))
+for (i in 3:8){
+  Mean_K_DF_STATc <- data.frame("SD_m" = MEAN_K_SD_b[,i], "Method" = rep(colnames( MEAN_K_SD_b)[i], dim(MEAN_K_SD_b)[1]))
+  Mean_K_DF_STAT <- rbind(Mean_K_DF_STAT, Mean_K_DF_STATc  )
+}
+
+paired_test_m_BILAT  <- pairwise.t.test(Mean_K_DF_STAT$SD_m, p.adj = "holm", Mean_K_DF_STAT$Method, paired = TRUE, alternative = 'two.sided')$p.value ;      
+paired_test_m_BILAT  <- as.matrix(paired_test_m_BILAT)
+colnames(paired_test_m_BILAT ) <- c("pca 2D","pca 5D", "umap nn = 15",  "umap nn = 34", "umap nn = 89" , "umap nn = 121")
+rownames(paired_test_m_BILAT ) <- c("pca 5D", "umap nn = 15",  "umap nn = 34", "umap nn = 89" ,"umap nn = 121", "umap nn = 208" )
+paired_test_m_BILAT  <-  format(paired_test_m_BILAT  , scientific=TRUE,digits=3)
+tablemain_BILAT <- ggtexttable(paired_test_m_BILAT , rows =rownames(paired_test_m_BILAT),theme = ttheme("classic"))
+tablemain_BILAT
+
+paired_test_m_GREATER  <- pairwise.t.test(  Mean_K_DF_STAT$SD_m, p.adj = "holm", Mean_K_DF_STAT$Method,    paired = TRUE, alternative = 'greater')$p.value ;     
+paired_test_m_GREATER  <- as.matrix(paired_test_m_GREATER)
+colnames(paired_test_m_GREATER ) <- c("pca 2D","pca 5D", "umap nn = 15","umap nn = 121")
+rownames(paired_test_m_GREATER ) <- c("pca 5D", "umap nn = 15","umap nn = 121", "umap nn = 208" )
+paired_test_m_GREATER  <-  format(paired_test_m_GREATER  , scientific=TRUE,digits=3)
+tablemain_GREATER <- ggtexttable(paired_test_m_GREATER , rows =rownames(paired_test_m_GREATER),theme = ttheme("classic"))
+tablemain_GREATER
+
+paired_test_m_LESS  <- pairwise.t.test(Mean_K_DF_STAT$SD_m, p.adj = "holm", Mean_K_DF_STAT$Method,    paired = TRUE,  alternative = 'less')$p.value ;     
+paired_test_m_LESS  <- as.matrix(paired_test_m_LESS)
+colnames(paired_test_m_LESS ) <- c("pca 2D","pca 5D", "umap nn = 15","umap nn = 121")
+rownames(paired_test_m_LESS ) <- c("pca 5D", "umap nn = 15","umap nn = 121", "umap nn = 208" )
+paired_test_m_LESS  <-  format(paired_test_m_LESS  , scientific=TRUE,digits=3)
+tablemain_LESS <- ggtexttable(paired_test_m_LESS , rows =rownames(paired_test_m_LESS),theme = ttheme("classic"))
+tablemain_LESS
+ggarrange(tablemain_BILAT, tablemain_GREATER, tablemain_LESS, nrow = 3)
+
+
+# Summary table : 
+
+Main_stat_table <- matrix(ncol =7, nrow = 7)
+colnames(Main_stat_table) = c("PCA 2D", "PCA 5D", "UMAP nn = 15","UMAP nn = 34", "UMAP nn = 89" ,"UMAP nn = 121", "UMAP nn = 208")
+rownames(Main_stat_table) = c("PCA 2D", "PCA 5D", "UMAP nn = 15","UMAP nn = 34", "UMAP nn = 89", "UMAP nn = 121", "UMAP nn = 208")
+Main_stat_table[ 1,] = c("-", "1.00e+00", "9.32e-196", "7.04e-164", "1.38e-30", "1.41e-34", "4.37e-33")
+Main_stat_table[ 2,] = c("0.00e+00", "-", "4.93-240", "1.02e-231", "3.59e-260", "1.35e-264", "7.02e-254")
+Main_stat_table[ 3,] = c("1.00e+00", "1.00e+00", "-", "1.00e+00", "1.00e+00", "1.00e+00", "1.00e+00")
+Main_stat_table[ 4,] = c("1.00e+00", "1.00e+00", "1.16e-240", "-", "1.00e+00", "1.00e+00", "1.00e+00")
+Main_stat_table[ 5,] = c("1.00e+00", "1.00e+00", "1.69e-226", "4.23e-202", '-', "1.00e+00" ,"1.27e-05")
+Main_stat_table[ 6,] = c("1.00e+00", "1.00e+00", "7.01e-225", "9.07e-202", "1.00e+00",  '-', "4.56e-13")
+Main_stat_table[ 7,] = c("1.00e+00", "1.00e+00", "3.99e-231", "1.47e-210", "1.00e+00",  "1.00e+00", '-')
+Main_stat_table
+
+
+tab <- ggtexttable(Main_stat_table, 
+                   theme = ttheme(
+                     colnames.style = colnames_style(face = "bold"),
+                     rownames.style = rownames_style(face = "bold"))
+)
+tab
+tab <- table_cell_bg(tab, row = 2, column = 2,
+                     fill="darkgray")
+tab <- table_cell_bg(tab, row = 3, column = 3,
+                     fill="darkgray")
+tab <- table_cell_bg(tab, row = 4, column = 4,
+                     fill="darkgray")
+tab <- table_cell_bg(tab, row = 5, column = 5,
+                     fill="darkgray")
+tab <- table_cell_bg(tab, row = 6, column = 6,
+                     fill="darkgray")
+tab <- table_cell_bg(tab, row = 7, column = 7,
+                     fill="darkgray")
+tab <- table_cell_bg(tab, row = 8, column = 8,
+                     fill="darkgray")
+tab
+
+ggarrange(ggarrange(p,pn,p_legend, labels = c("A","B"),  widths = c(.4,.4,.2), ncol =3),
+          ggarrange(tab, labels = 'C'),
+          nrow = 2)
 
 

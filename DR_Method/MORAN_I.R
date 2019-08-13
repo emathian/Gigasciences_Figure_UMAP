@@ -22,6 +22,8 @@ moran_I_main <-function(l_coords_data , spatial_data, listK, nsim = 500, Stat=FA
   }
   l_coords_data <- L_coords_data
   MI_array <- array(rep(NA, length(l_coords_data)* (dim(spatial_data)[2]-1)*length(listK)), dim=c(length(l_coords_data), (dim(spatial_data)[2]-1), length(listK)))
+  MI_MY_array <- array(rep(NA, length(l_coords_data)* (dim(spatial_data)[2]-1)*length(listK)), dim=c(length(l_coords_data), (dim(spatial_data)[2]-1), length(listK)))
+  
   MS_array <- array(rep(NA, length(l_coords_data)* (dim(spatial_data)[2]-1)*length(listK)), dim=c(length(l_coords_data), (dim(spatial_data)[2]-1), length(listK)))
   for (i in 1:length(l_coords_data)){
     c_data <- l_coords_data[[i]]
@@ -31,22 +33,9 @@ moran_I_main <-function(l_coords_data , spatial_data, listK, nsim = 500, Stat=FA
       c_data <- as.matrix(c_data[, 2:dim(c_data)[2]])
     }
     for (c_k in 1:length(listK)){
-      if (dim(c_data)[2] == 2){
-        k_neigh <- knn2nb(knearneigh(c_data, k=listK[c_k], RANN=FALSE))
-        ww <- nb2listw(k_neigh, style='B')
-      }
+     
       for (j in 2:dim(spatial_data)[2]){
-
-        if (dim(c_data)[2] == 2){
-          MI <- moran(spatial_data[, j], ww, n=length(ww$neighbours), S0=Szero(ww))
-          MI_array[i,(j-1),c_k] <- MI$I
-          if (Stat != FALSE){
-            MS <- moran.mc(spatial_data[, j], ww, nsim=99)
-            MS_array[i,(j-1),c_k] <- MS$p.value
-          }
-        }
-        else{
-          c_spatial_data <- data.frame("Sample_ID"= as.character(c_sample_id), "att" = spatial_data[, j] )
+           c_spatial_data <- data.frame("Sample_ID"= as.character(c_sample_id), "att" = spatial_data[, j] )
           MI <- moran_index_HD(data = c_data, spatial_att = c_spatial_data, K = listK[c_k], merge = FALSE)
           MI_array[i,(j-1),c_k] <- MI 
           if (Stat != FALSE){
@@ -56,7 +45,6 @@ moran_I_main <-function(l_coords_data , spatial_data, listK, nsim = 500, Stat=FA
         }
       } 
     }
-  }
   for (k in 1:length(listK)){
     if(is.null(methods_name)==F & length(methods_name) == dim(MI_array)[1]){
        rownames(MI_array) <- methods_name
@@ -79,7 +67,7 @@ moran_I_main <-function(l_coords_data , spatial_data, listK, nsim = 500, Stat=FA
     return(list('MoranIndex' = MI_array,'MoranStat'= MS_array))
   }
   else{
-    return(list('MoranIndex' = MI_array))
+    return(list('MoranIndex' = MI_array, 'MI_MY_array' = MI_MY_array))
   }
 }
 
@@ -114,12 +102,13 @@ moran_index_HD <- function(data, spatial_att, K, merge = TRUE){
   g <- expand.grid(dy, dy)
   yiyj <- g[,1] * g[,2]
   pm <- matrix(yiyj, ncol=n)
-  pmw <- pm * m_neigh
-  spmw <- sum(pmw)
+  pmw <- pm * m_neigh ; 
+  spmw <- sum(pmw) ; 
   smw <- sum(m_neigh)
   sw <-spmw/smw
   vr <- n / sum(dy^2)
   MI <- vr * sw
+  MI
   return(MI)
 }
 #########################################################################################
@@ -281,8 +270,6 @@ moran_I_scatter_plot_by_k <- function(data, Xlab = NULL, Ylab=NULL, Title= NULL)
     if(is.null(Ylab)){
       Ylab <-"Moran.Index"
     }
-    
-    
     p <- ggplot(df_graph, aes(x=Attributes, y=moranI,  group=Methods, color = Methods)) +  geom_point(size = 4)+
       scale_color_viridis(discrete=TRUE) 
     p <- p +  labs(title=Title, caption = "Moran indexes for each variable and for each method. ",
@@ -312,7 +299,7 @@ moran_I_scatter_plot_by_k <- function(data, Xlab = NULL, Ylab=NULL, Title= NULL)
         colnames(data) <- as.character(seq(dim(data)[2]))
       }
       for (i in 1:dim(data)[1]){
-        cm <- rownames(data)[i]
+        cm <- rep(rownames(data)[i],dim(data)[1])
         vect_metod <- c(vect_metod, cm)
         moranI <- c(moranI, data[i, , k])
         att <- colnames(data)
@@ -324,8 +311,8 @@ moran_I_scatter_plot_by_k <- function(data, Xlab = NULL, Ylab=NULL, Title= NULL)
       moranI_k <- c(moranI_k, moranI)
       att_k <- c(att_k, att_I)
     }
-
     df_graph <- data.frame("Methods" = as.character(vect_metod_k), "Attributes" =att_k, "moranI" = moranI_k, "K_level" =  as.numeric(k_vect))
+    print(head(df_graph))
     
     if (is.null(Title)){
       Title <- "Moran indexes by attribute according "
@@ -337,25 +324,29 @@ moran_I_scatter_plot_by_k <- function(data, Xlab = NULL, Ylab=NULL, Title= NULL)
       Ylab <-"Moran.Index"
     }
     list_p <- list()
-    for ( i in 1:length(rownames(data))){
-    df_graph_c <- df_graph[ df_graph$Methods == rownames(data)[i],]
-    p <- ggplot(df_graph_c, aes(x=as.numeric(K_level), y=moranI, color = Attributes)) + geom_point()+
-      scale_color_viridis(discrete=TRUE) 
-    p <- p +  labs(title= paste(Title,  rownames(data)[i] ) , caption = "Moran indexes distribution by k level for each variable and for each method. ",
-                   y=Ylab, x= Xlab) +theme(plot.title=element_text(size=18, face="bold", color="#17202A", hjust=0.5,lineheight=1.2),  # title
-                                           plot.subtitle =element_text(size=13, color="#17202A", hjust=0.5),  # caption
-                                           plot.caption =element_text(size=10, color="#17202A", hjust=0.5),  # caption
-                                           axis.title.x=element_text(size=12, face="bold"),  # X axis title
-                                           axis.title.y=element_text(size=12, face="bold"),  # Y axis title
-                                           axis.text.x=element_text(size=12),  # X axis text
-                                           axis.text.y=element_text(size=12))  # Y axis text
-    print(p) 
-    list_p <- c(list_p, p)
+    for ( i in 1:length(unique(df_graph$Attributes))){
+      df_graph$Attributes <- as.character(df_graph$Attributes)
+      df_graph_c <- df_graph[ df_graph$Attributes == unique(df_graph$Attributes)[i],]
+      print("df_graph_c")
+      print(unique(as.character(df_graph_c$Methods)))
+      p <- ggplot(df_graph_c, aes(x=as.numeric(K_level), y=moranI, color = as.factor(Methods))) + geom_point()+
+        scale_color_viridis(discrete=TRUE) 
+      p <- p +  labs(title= paste(Title,  rownames(data)[i] ) , caption = "Moran indexes distribution by k level for each variable and for each method. ",
+                     y=Ylab, x= Xlab) +theme(plot.title=element_text(size=18, face="bold", color="#17202A", hjust=0.5,lineheight=1.2),  # title
+                                             plot.subtitle =element_text(size=13, color="#17202A", hjust=0.5),  # caption
+                                             plot.caption =element_text(size=10, color="#17202A", hjust=0.5),  # caption
+                                             axis.title.x=element_text(size=12, face="bold"),  # X axis title
+                                             axis.title.y=element_text(size=12, face="bold"),  # Y axis title
+                                             axis.text.x=element_text(size=12),  # X axis text
+                                             axis.text.y=element_text(size=12))  # Y axis text``
+      print(p)
+      list_p <- c(list_p, p)
     }
     return(list(list_p, df_graph))
     
   }
 }
+###############################
 ##########################################################################################################
 moran_ranking <-function(l_coords_data , spatial_data, K_value, N  ,ref=NULL,methods_name = NULL){
   methods_names <- names(l_coords_data)
@@ -421,8 +412,19 @@ moran_ranking <-function(l_coords_data , spatial_data, K_value, N  ,ref=NULL,met
     first_cor_list[[i]] <- sortN_l
   }
   names(first_cor_list) <- names(List_coords)
-    
-  v.table<- venn(first_cor_list)
+  if (length(first_cor_list)== 2){
+    v.table<- length(intersect(first_cor_list[[1]], first_cor_list[[2]]))
+  }  
+  else if (length(first_cor_list)== 3){
+    v.table<- length(intersect(first_cor_list[[1]], first_cor_list[[2]], first_cor_list[[3]]))
+  }  
+  else if (length(first_cor_list)== 4){
+    v.table<- length(intersect(first_cor_list[[1]], first_cor_list[[2]], first_cor_list[[3]], first_cor_list[[4]]))
+  }  
+  else if (length(first_cor_list)== 5){
+    v.table<- length(intersect(first_cor_list[[1]], first_cor_list[[2]], first_cor_list[[3]], first_cor_list[[4]],, first_cor_list[[5]]))
+  }  
+  
   return(list('MoranIndex' = MI_array, 'Venn.Diagram' =v.table ))
 }
 

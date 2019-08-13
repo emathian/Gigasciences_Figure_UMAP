@@ -16,8 +16,9 @@ library(RColorBrewer)
 library(cluster)
 library(eulerr)
 library(ade4)
-source('../DR_Method/Dimensionality_reduction_comparison_metrics.R')
+source('DR_Method/Dimensionality_reduction_comparison_metrics.R')
 library(gganimate)
+library(latex2exp)
 library(gifski) # for gganimate
 library(png) # for gganimate
 set.seed(1564404882)
@@ -27,8 +28,8 @@ theme_set(theme_bw())
 
 ## Import data -------------------------------------------------------------
 
-Attributes_UMAP_TCACLCNECSCL <- read.table("Attributes_UMAP_TCACLCNECSCLC.tsv",sep='\t' , header = T)
-vst50_TCACLCNECSCLC<- read.table("../data/VST_nosex_50pc_TCACLCNECSCLC.txt", header = T)
+Attributes_UMAP_TCACLCNECSCL <- read.table("data/Attributes_UMAP_TCACLCNECSCLC.tsv",sep='\t' , header = T)
+vst50_TCACLCNECSCLC<- read.table("data/VST_nosex_TCACLCNECSCLC.txt", header = T)
 vst50_TCACLCNECSCLC <- data.frame(t(vst50_TCACLCNECSCLC ))
 vst50_TCACLCNECSCLC_designRD <- vst50_TCACLCNECSCLC # Structure match with the one require for PCA and UMAP
 vst50_TCACLCNECSCLC_designRD <- vst50_TCACLCNECSCLC_designRD[- which(rownames(vst50_TCACLCNECSCLC_designRD) == "S00716_A"|rownames(vst50_TCACLCNECSCLC_designRD) == "S02322_B"),]
@@ -91,10 +92,12 @@ colnames(umap150_res_df)[1] <- "Sample_ID"
 
 ### NN 208
 
-umap208 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 208)
-umap208_res_df <- as.data.frame(umap208$layout)
-umap208_res_df  = setDT(umap208_res_df , keep.rownames = TRUE)[]
-colnames(umap208_res_df)[1] <- "Sample_ID"
+#umap208 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 208)
+#umap208_res_df <- as.data.frame(umap208$layout)
+#umap208_res_df  = setDT(umap208_res_df , keep.rownames = TRUE)[]
+#colnames(umap208_res_df)[1] <- "Sample_ID"
+umap208_res_df <- read.table("data/Coords_umap_nn208.tsv", header = F)
+colnames(umap208_res_df) <- c("Sample_ID", "V1", "V2")
 umap208_res_df <- umap208_res_df[order(umap208_res_df$Sample_ID),]
 
 p2_standard_nn208 <- ggplot(umap208_res_df, aes(x=V1, y=V2,  color=Attributes_UMAP_TCACLCNECSCL$Molecular_clusters)) +  geom_point(size=4, alpha =.8) + scale_color_brewer(palette="Spectral") +labs(title= "208")+ theme(legend.title = element_blank()) + theme(legend.position = "none")
@@ -1290,11 +1293,15 @@ ggarrange(p_overlap, NULL, PEul2, labels = c("A", "B",""), ncol = 3, widths = c(
 
 
 # MI_OTP Example ----------------------------------------------------------
+vst50_TCACLCNECSCLC_VSamp <- vst50_TCACLCNECSCLC_VSamp[order(vst50_TCACLCNECSCLC_VSamp$Sample_ID),]
 
 Embl_OTP = "ENSG00000171540.6"
 otp_df <- data.frame("Sample_ID" = vst50_TCACLCNECSCLC_VSamp$Sample_ID, "OTP" =  vst50_TCACLCNECSCLC_VSamp[,which(colnames(vst50_TCACLCNECSCLC_VSamp)== Embl_OTP)] )
+
 otp_df <- otp_df[order(otp_df$Sample_ID),]
-MI_OTP <- moran_I_main(l_coords_data = List_coords, spatial_data = data.frame(otp_df), listK= seq(1,207,1), nsim = 10, Stat=FALSE, Graph = TRUE, methods_name = c('PCA 5D','UMAP nn = 208', "GeneExprMat"))
+MI_OTP_v1 <- moran_I_main(l_coords_data = List_coords, spatial_data = data.frame(otp_df), listK= seq(35,40,2), nsim = 10, Stat=FALSE, Graph = TRUE, methods_name = c('PCA 2D','PCA 5D','UMAP nn = 208', "GeneExprMat"))
+MI_OTP_v2 <- moran_I_main(l_coords_data = List_coords, spatial_data = data.frame(otp_df), listK= seq(35,40,2), nsim = 10, Stat=FALSE, Graph = TRUE, methods_name = c('PCA 2D'))
+
 MI_OTP_by_k = moran_I_scatter_plot_by_k(data = as.array(MI_OTP)[[1]], Xlab = NULL, Ylab=NULL, Title= NULL)
 MI_otp_plot <- MI_OTP_by_k[[2]]
 #c(viridisLite::viridis(3), viridisLite::viridis(4)[2]))
@@ -1312,6 +1319,7 @@ p_otp1 <- p_otp1 +  labs(title="",   y="Moran Index", x="K") +theme( legend.posi
                                                                      legend.title = element_blank())  # Y axis text
 
 
+p_otp1 
 OTPMap_df <- merge(umap208_res_df,otp_df, by = "Sample_ID")
 
 pOTPMap <- ggplot(OTPMap_df, aes(x=V1, y=V2,  color=OTP)) +  geom_point(size=4, alpha =.8) + scale_color_distiller(palette = "Spectral")
@@ -1382,18 +1390,18 @@ ggarrange(p_MKI671, pMKI67Map, ncol = 2, labels = c("A", "B"))
 
 # MoranIndex theoric analysis ---------------------------------------------
 
-# umap208_Moran_df <- data.frame()
-# umap208_Moran_df <- cbind("umap208_res_df"= umap208_res_df, "Molecular_cluster" =Attributes_UMAP_TCACLCNECSCL$Molecular_clusters )
-# MidX <- ifelse(umap208_Moran_df$umap208_res_df.V1 < mean(umap208_Moran_df$umap208_res_df.V1), 0, 1)
-# MidY <- ifelse(umap208_Moran_df$umap208_res_df.V2 < mean(umap208_Moran_df$umap208_res_df.V2), 0, 1)
-# Uniform <- rep(1, length(umap208_Moran_df$umap208_res_df.V2) -1)
-# Uniform <- c(Uniform , 2)
-# alea <- rnorm(208,mean = 3,sd=207)
-# spa_MI_test <- data_frame("Sample_ID" = umap208_Moran_df$umap208_res_df.Sample_ID,  "MidX" = MidX, "MidY"= MidY, "Uniform" = Uniform, "Alea" = alea )
+ umap208_Moran_df <- data.frame()
+ umap208_Moran_df <- cbind("umap208_res_df"= umap208_res_df, "Molecular_cluster" =Attributes_UMAP_TCACLCNECSCL$Molecular_clusters )
+ MidX <- ifelse(umap208_Moran_df$umap208_res_df.V1 < mean(umap208_Moran_df$umap208_res_df.V1), 0, 1)
+ MidY <- ifelse(umap208_Moran_df$umap208_res_df.V2 < mean(umap208_Moran_df$umap208_res_df.V2), 0, 1)
+ Uniform <- rep(1, length(umap208_Moran_df$umap208_res_df.V2) -1)
+ Uniform <- c(Uniform , 2)
+ alea <- rnorm(208,mean = 3,sd=207)
+ spa_MI_test <- data_frame("Sample_ID" = umap208_Moran_df$umap208_res_df.Sample_ID,  "MidX" = MidX, "MidY"= MidY, "Uniform" = Uniform, "Alea" = alea )
+ 
+ List_coords <- list('umap_nn=208' =  data.frame(umap208_res_df[,1:3]) ) 
 # 
-# List_coords <- list('umap_nn=208' =  data.frame(umap208_res_df[,1:3]) ) 
-# 
-# MI_MidX <- moran_I_main(l_coords_data = List_coords, spatial_data = data.frame(spa_MI_test), listK= seq(1,207,1), nsim = 10, Stat=FALSE, Graph = TRUE, methods_name = c('UMAP nn = 208'))
+ MI_MidX <- moran_I_main(l_coords_data = List_coords, spatial_data = data.frame(spa_MI_test), listK= seq(1,207,1), nsim = 10, Stat=FALSE, Graph = TRUE, methods_name = c('UMAP nn = 208'))
 # 
 # MI_MidY <- moran_I_main(l_coords_data = List_coords, spatial_data = data.frame("Sample_ID" = umap208_Moran_df$umap208_res_df.Sample_ID, "MidY" = MidY  ), listK= seq(1,207,1), nsim = 10, Stat=FALSE, Graph = TRUE, methods_name = c('UMAP nn = 208'))
 # MI_MidY = moran_I_scatter_plot_by_k(data = as.array(MI_MidY)[[1]], Xlab = NULL, Ylab=NULL, Title= NULL)
@@ -1454,41 +1462,52 @@ ggarrange(p_MKI671, pMKI67Map, ncol = 2, labels = c("A", "B"))
 
 # UMAP gganimate ----------------------------------------------------------
 
-ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, colour = country)) +
-  geom_point(alpha = 0.7, show.legend = FALSE) +
-  scale_colour_manual(values = country_colors) +
-  scale_size(range = c(2, 12)) +
-  scale_x_log10() +
-  facet_wrap(~continent) +
-  # Here comes the gganimate specific bits
-  labs(title = 'Year: {frame_time}', x = 'GDP per capita', y = 'life expectancy') +
-  transition_time(year) +
-  ease_aes('linear')
 
 
-umap_res_df <- data.frame()
-for (i in seq(10,208,5)){
-  print(i)
-  umap_c_nn = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = i)
-  umap_c_nn_res_df <- as.data.frame(umap_c_nn$layout)
-  umap_c_nn_res_df  = setDT(umap_c_nn_res_df , keep.rownames = TRUE)[]
-  colnames(umap_c_nn_res_df)[1] <- "Sample_ID"
-  umap_c_nn_res_df <- umap_c_nn_res_df[order(umap_c_nn_res_df$Sample_ID),]
-  umap_c_nn_res_df <- cbind(umap_c_nn_res_df , "nn" = rep(i, dim(umap_c_nn_res_df)[1]))
-  umap_c_nn_res_df <- cbind(umap_c_nn_res_df , "Molecular_clusters" = Attributes_UMAP_TCACLCNECSCL$Molecular_clusters)
-  umap_res_df <- rbind(umap_res_df, umap_c_nn_res_df)
+# umap_res_df <- data.frame()
+# for (i in seq(10,208,1)){
+#   print(i)
+#   umap_c_nn = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = i)
+#   umap_c_nn_res_df <- as.data.frame(umap_c_nn$layout)
+#   umap_c_nn_res_df  = setDT(umap_c_nn_res_df , keep.rownames = TRUE)[]
+#   colnames(umap_c_nn_res_df)[1] <- "Sample_ID"
+#   umap_c_nn_res_df <- umap_c_nn_res_df[order(umap_c_nn_res_df$Sample_ID),]
+#   umap_c_nn_res_df <- cbind(umap_c_nn_res_df , "nn" = rep(i, dim(umap_c_nn_res_df)[1]))
+#   umap_c_nn_res_df <- cbind(umap_c_nn_res_df , "Molecular_clusters" = Attributes_UMAP_TCACLCNECSCL$Molecular_clusters)
+#   umap_res_df <- rbind(umap_res_df, umap_c_nn_res_df)
+# }
+# 
+# saveRDS(umap_res_df,'umap_allK.rds')
+umap_res_df <- readRDS('umap_allK.rds')
+umap_res_dfV2 <- umap_res_df
+umap_res_dfV2 <- umap_res_dfV2[complete.cases(umap_res_dfV2),]
+
+n_keep <- c()
+Unique_nn <- unique(umap_res_dfV2$nn)
+for (i in 1:length(Unique_nn)){
+  if (Unique_nn[i]%%2 == 0){
+    n_keep <- c(n_keep, Unique_nn[i])
+  }
 }
 
-umap_res_dfV2 <- umap_res_df[umap_res_df$nn > 20]
-umap_res_dfV2 <- umap_res_dfV2[complete.cases(umap_res_dfV2),]
+
+umap_res_dfV2 <- umap_res_dfV2[umap_res_dfV2$nn %in% n_keep]
 p <- ggplot(umap_res_dfV2 , aes(x=V1, y=V2,  color=Molecular_clusters)) +  geom_point()+
   scale_color_brewer(palette="Spectral") 
-p <- p + transition_time(nn)+labs(title = 'n_neighbors:{frame_time}')  + ease_aes('linear')
+p <- p + transition_states(nn)+labs(title = 'n_neighbors: {closest_state}') 
+ #view_follow(fixed_y = FALSE)
 
+p
 
+library(av)
+animate(p,renderer = av_renderer())
 
+plot_grid(animate(p, fps =1.5))
 # Consistancy of SD metric ------------------------------------------------
 
+
+library(gapminder)
+head(gapminder)
 
 set.seed(1564404882)
 
@@ -1525,26 +1544,6 @@ vst50_TCACLCNECSCLC_VSamp <- vst50_TCACLCNECSCLC_VSamp[order(vst50_TCACLCNECSCLC
 #              BECAREFUL IT COULD BE LONG AROUND 9 hours with 4 cores         #
 ###############################################################################
 
-# Librairies --------------------------------------------------------------
-library(umap)
-library(ggplot2)
-library(ade4)
-library(dplyr)
-library(data.table)
-library(gridExtra)
-library(ggpubr)
-library(viridis)
-library(data.table)
-library(ggplot2)
-library(RColorBrewer)
-library(cluster)
-library(parallel)
-library(ade4)
-library(cluster)
-library(doParallel)
-source('../DR_Method/SEQ_DIFF.R')
-set.seed(1564404882)
-theme_set(theme_bw())
 
 # Dimensionality reduction projection -------------------------------------
 

@@ -1524,116 +1524,216 @@ vst50_TCACLCNECSCLC_VSamp <- vst50_TCACLCNECSCLC_VSamp[order(vst50_TCACLCNECSCLC
 ###############################################################################
 #              BECAREFUL IT COULD BE LONG AROUND 9 hours with 4 cores         #
 ###############################################################################
-# start_time <- Sys.time()
-# no_cores <- detectCores()
-# no_cores
-# cl <- makeCluster(no_cores)
-# registerDoParallel(cl)
-# Main_SQ_REP4 <-  foreach(i=1:100, .combine=c, .packages = c("umap", 'data.table', "ade4", "parallel", "doParallel", "cluster"))%dopar%{
-#   ### NN = 121 
-#   
-#   # #### Legends
-#   # umap121 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 121)
-#   # umap121_res_df <- as.data.frame(umap121$layout)
-#   # umap121_res_df  = setDT(umap121_res_df , keep.rownames = TRUE)[]
-#   # colnames(umap121_res_df)[1] <- "Sample_ID"
-#   # umap121_res_df <- umap121_res_df[order(umap121_res_df$Sample_ID),]
-#   # 
-#   # ### NN 15
-#   # 
-#   # umap15 = umap(vst50_TCACLCNECSCLC_designRD)
-#   # umap15_res_df <- as.data.frame(umap15$layout)
-#   # umap15_res_df  = setDT(umap15_res_df , keep.rownames = TRUE)[]
-#   # colnames(umap15_res_df)[1] <- "Sample_ID"
-#   # umap15_res_df <- umap15_res_df[order(umap15_res_df$Sample_ID),]
-#   # 
-#   # 
-#   # ### NN 89
-#   # 
-#   # umap89 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 89)
-#   # umap89_res_df <- as.data.frame(umap89$layout)
-#   # umap89_res_df  = setDT(umap89_res_df , keep.rownames = TRUE)[]
-#   # colnames(umap89_res_df)[1] <- "Sample_ID"
-#   # umap89_res_df <- umap89_res_df[order(umap89_res_df$Sample_ID),]
-#   # 
-#   # ### NN 208
-#   # 
-#   # umap208 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 208)
-#   # umap208_res_df <- as.data.frame(umap208$layout)
-#   # umap208_res_df  = setDT(umap208_res_df , keep.rownames = TRUE)[]
-#   # colnames(umap208_res_df)[1] <- "Sample_ID"
-#   # umap208_res_df <- umap208_res_df[order(umap208_res_df$Sample_ID),]
-#   
-#   
-#   umap34 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 34)
-#   umap34_res_df <- as.data.frame(umap34$layout)
-#   umap34_res_df  = setDT(umap34_res_df , keep.rownames = TRUE)[]
-#   colnames(umap34_res_df)[1] <- "Sample_ID"
-#   umap34_res_df <- umap34_res_df[order(umap34_res_df$Sample_ID),]
-#   
-#   List_projection <- list(data.frame(acp_5D_li_df), data.frame(umap34_res_df[,1:3]))
-#   
-#   
-#   #List_projection <- list(data.frame(acp_fig1_li_df), data.frame(acp_5D_li_df),data.frame(umap15_res_df[,1:3]), data.frame(umap89_res_df[,1:3]), data.frame(umap121_res_df[,1:3]),data.frame(umap208_res_df[,1:3]))
-#   
-#   #Main_SQ_res_NN <- Seq_main(l_data = List_projection , dataRef = data.frame(vst50_TCACLCNECSCLC_VSamp) , listK = seq(from= 1, to = 208, by = 10), colnames_res_df = c("pca_2D", "pca_5D","umap_md=0.1_nn=15", "umap_md=0.1_nn=89","umap_md=0.1_nn=121", "umap_md=0.1_nn=208")  , filename = NULL , graphics = FALSE, stats =FALSE) #
-#   Main_SQ_res_NN <- Seq_main(l_data = List_projection , dataRef = data.frame(vst50_TCACLCNECSCLC_VSamp) , listK = seq(from= 1, to = 208, by = 10), colnames_res_df = c("pca_5D","umap_md=0.1_nn=34")  , filename = NULL , graphics = FALSE, stats =FALSE) #
-#   Main_SQ_res_NN[[1]]
-# }
-# end_time <- Sys.time()
-# start_time - end_time
-# 
-# saveRDS(Main_SQ_REP4, "Main_SQ_REP4.rds")
-# saveRDS(Main_SQ_REP3, "Main_SQ_REP3.rds")
+
+# Librairies --------------------------------------------------------------
+library(umap)
+library(ggplot2)
+library(ade4)
+library(dplyr)
+library(data.table)
+library(gridExtra)
+library(ggpubr)
+library(viridis)
+library(data.table)
+library(ggplot2)
+library(RColorBrewer)
+library(cluster)
+library(parallel)
+library(ade4)
+library(cluster)
+library(doParallel)
+source('../DR_Method/SEQ_DIFF.R')
+set.seed(1564404882)
+theme_set(theme_bw())
+
+# Dimensionality reduction projection -------------------------------------
+
+## Import data -------------------------------------------------------------
+
+Attributes_UMAP_TCACLCNECSCL <- read.table("Attributes_UMAP_TCACLCNECSCLC.tsv",sep='\t' , header = T)
+vst50_TCACLCNECSCLC<- read.table("../data/VST_nosex_50pc_TCACLCNECSCLC.txt", header = T)
+vst50_TCACLCNECSCLC <- data.frame(t(vst50_TCACLCNECSCLC ))
+vst50_TCACLCNECSCLC_designRD <- vst50_TCACLCNECSCLC # Structure match with the one require for PCA and UMAP
+vst50_TCACLCNECSCLC_designRD <- vst50_TCACLCNECSCLC_designRD[- which(rownames(vst50_TCACLCNECSCLC_designRD) == "S00716_A"|rownames(vst50_TCACLCNECSCLC_designRD) == "S02322_B"),]
+rownames(vst50_TCACLCNECSCLC_designRD)[which(rownames(vst50_TCACLCNECSCLC_designRD) == "S02322_A")] <- "S02322.R1"
 
 
-# Importation of results --------------------------------------------------
+
+
+acp_2D <- dudi.pca(vst50_TCACLCNECSCLC_designRD, center = T , scale = F , scannf = F , nf=2) #
+acp_fig1_li_df =  as.data.frame(acp_2D$li)
+acp_fig1_li_df = setDT(acp_fig1_li_df, keep.rownames = TRUE)[]
+colnames(acp_fig1_li_df)[1]<-'Sample_ID'
+acp_fig1_li_df <- acp_fig1_li_df[order(acp_fig1_li_df$Sample_ID),]
+
+acp_5D <- dudi.pca(vst50_TCACLCNECSCLC_designRD, center = T , scale = F , scannf = F , nf=5) #
+acp_5D_li_df =  as.data.frame(acp_5D$li)
+acp_5D_li_df  = setDT(acp_5D_li_df , keep.rownames = TRUE)[]
+colnames(acp_5D_li_df )[1]<-'Sample_ID'
+acp_5D_li_df <- acp_5D_li_df[order(acp_5D_li_df$Sample_ID),]
+
+
+vst50_TCACLCNECSCLC_designRDSAMPLE <- rownames(vst50_TCACLCNECSCLC_designRD)
+vst50_TCACLCNECSCLC_VSamp <- cbind("Sample_ID" = vst50_TCACLCNECSCLC_designRDSAMPLE, vst50_TCACLCNECSCLC_designRD)
+vst50_TCACLCNECSCLC_VSamp <- vst50_TCACLCNECSCLC_VSamp[order(vst50_TCACLCNECSCLC_VSamp$Sample_ID),]
+
+## UMAP Projections --------------------------------------------------------
+start_time <- Sys.time()
+no_cores <- detectCores()
+no_cores
+cl <- makeCluster(no_cores)
+registerDoParallel(cl)
+Main_SQ_REP5 <-  foreach(i=1:100, .combine=c, .packages = c("umap", 'data.table', "ade4", "parallel", "doParallel", "cluster"))%dopar%{
+  ### NN = 121 
+  
+  # #### Legends
+  # umap121 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 121)
+  # umap121_res_df <- as.data.frame(umap121$layout)
+  # umap121_res_df  = setDT(umap121_res_df , keep.rownames = TRUE)[]
+  # colnames(umap121_res_df)[1] <- "Sample_ID"
+  # umap121_res_df <- umap121_res_df[order(umap121_res_df$Sample_ID),]
+  # 
+  # ### NN 15
+  # 
+  # umap15 = umap(vst50_TCACLCNECSCLC_designRD)
+  # umap15_res_df <- as.data.frame(umap15$layout)
+  # umap15_res_df  = setDT(umap15_res_df , keep.rownames = TRUE)[]
+  # colnames(umap15_res_df)[1] <- "Sample_ID"
+  # umap15_res_df <- umap15_res_df[order(umap15_res_df$Sample_ID),]
+  # 
+  # 
+  # ### NN 89
+  # 
+  # umap89 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 89)
+  # umap89_res_df <- as.data.frame(umap89$layout)
+  # umap89_res_df  = setDT(umap89_res_df , keep.rownames = TRUE)[]
+  # colnames(umap89_res_df)[1] <- "Sample_ID"
+  # umap89_res_df <- umap89_res_df[order(umap89_res_df$Sample_ID),]
+  # 
+  # ### NN 208
+  # 
+  # umap208 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 208)
+  # umap208_res_df <- as.data.frame(umap208$layout)
+  # umap208_res_df  = setDT(umap208_res_df , keep.rownames = TRUE)[]
+  # colnames(umap208_res_df)[1] <- "Sample_ID"
+  # umap208_res_df <- umap208_res_df[order(umap208_res_df$Sample_ID),]
+  
+  
+  umap60 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 60)
+  umap60_res_df <- as.data.frame(umap60$layout)
+  umap60_res_df  = setDT(umap60_res_df , keep.rownames = TRUE)[]
+  colnames(umap60_res_df)[1] <- "Sample_ID"
+  umap60_res_df <- umap60_res_df[order(umap60_res_df$Sample_ID),]
+  
+  umap90 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 90)
+  umap90_res_df <- as.data.frame(umap90$layout)
+  umap90_res_df  = setDT(umap90_res_df , keep.rownames = TRUE)[]
+  colnames(umap90_res_df)[1] <- "Sample_ID"
+  umap90_res_df <- umap90_res_df[order(umap90_res_df$Sample_ID),]
+  
+  umap110 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 110)
+  umap110_res_df <- as.data.frame(umap110$layout)
+  umap110_res_df  = setDT(umap110_res_df , keep.rownames = TRUE)[]
+  colnames(umap110_res_df)[1] <- "Sample_ID"
+  umap110_res_df <- umap110_res_df[order(umap110_res_df$Sample_ID),]
+  
+  
+  umap130 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 130)
+  umap130_res_df <- as.data.frame(umap130$layout)
+  umap130_res_df  = setDT(umap130_res_df , keep.rownames = TRUE)[]
+  colnames(umap130_res_df)[1] <- "Sample_ID"
+  umap130_res_df <- umap130_res_df[order(umap130_res_df$Sample_ID),]
+  
+  umap140 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 140)
+  umap140_res_df <- as.data.frame(umap140$layout)
+  umap140_res_df  = setDT(umap140_res_df , keep.rownames = TRUE)[]
+  colnames(umap140_res_df)[1] <- "Sample_ID"
+  umap140_res_df <- umap140_res_df[order(umap140_res_df$Sample_ID),]
+  
+  umap150 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 150)
+  umap150_res_df <- as.data.frame(umap150$layout)
+  umap150_res_df  = setDT(umap150_res_df , keep.rownames = TRUE)[]
+  colnames(umap150_res_df)[1] <- "Sample_ID"
+  umap150_res_df <- umap150_res_df[order(umap150_res_df$Sample_ID),]
+  
+  
+  umap180 = umap(vst50_TCACLCNECSCLC_designRD, n_neighbors = 180)
+  umap180_res_df <- as.data.frame(umap180$layout)
+  umap180_res_df  = setDT(umap180_res_df , keep.rownames = TRUE)[]
+  colnames(umap180_res_df)[1] <- "Sample_ID"
+  umap180_res_df <- umap180_res_df[order(umap180_res_df$Sample_ID),]
+  
+  
+  List_projection <- list(data.frame(acp_5D_li_df), data.frame(umap60_res_df[,1:3]), data.frame(umap90_res_df[,1:3]), data.frame(umap110_res_df[,1:3]),  data.frame(umap130_res_df[,1:3]) , data.frame(umap140_res_df[,1:3]) ,data.frame(umap150_res_df[,1:3]), data.frame(umap180_res_df[,1:3]))
+  
+  
+  #List_projection <- list(data.frame(acp_fig1_li_df), data.frame(acp_5D_li_df),data.frame(umap15_res_df[,1:3]), data.frame(umap89_res_df[,1:3]), data.frame(umap121_res_df[,1:3]),data.frame(umap208_res_df[,1:3]))
+  
+  #Main_SQ_res_NN <- Seq_main(l_data = List_projection , dataRef = data.frame(vst50_TCACLCNECSCLC_VSamp) , listK = seq(from= 1, to = 208, by = 10), colnames_res_df = c("pca_2D", "pca_5D","umap_md=0.1_nn=15", "umap_md=0.1_nn=89","umap_md=0.1_nn=121", "umap_md=0.1_nn=208")  , filename = NULL , graphics = FALSE, stats =FALSE) #
+  Main_SQ_res_NN <- Seq_main(l_data = List_projection , dataRef = data.frame(vst50_TCACLCNECSCLC_VSamp) , listK = seq(from= 1, to = 208, by = 10), colnames_res_df = c("pca_5D","umap_md=0.1_nn=34")  , filename = NULL , graphics = FALSE, stats =FALSE) #
+  Main_SQ_res_NN[[1]]
+}
+end_time <- Sys.time()
+start_time - end_time
+saveRDS(Main_SQ_REP5, "Main_SQ_REP5.rds")
+
+saveRDS(Main_SQ_REP4, "Main_SQ_REP4.rds")
+saveRDS(Main_SQ_REP3, "Main_SQ_REP3.rds")
 
 Main_SQ_REP_r <- readRDS("Main_SQ_REP3.rds")
 Main_SQ_REP_r34 <- readRDS("Main_SQ_REP4.rds")
+Main_SQ_REP5 <- readRDS("Main_SQ_REP5.rds")
+Main_SQ_REP5r <- Main_SQ_REP5
+for(i in seq(1, 1000, 10)){
+  print(names(Main_SQ_REP5r)[i])
+  names(Main_SQ_REP5r)[i+3] <- "Umap_nn60" ;   names(Main_SQ_REP5r)[i+4] <- "Umap_nn90";  names(Main_SQ_REP5r)[i+5] <- "Umap_nn110";
+  names(Main_SQ_REP5r)[i+6] <- "Umap_nn130" ;  names(Main_SQ_REP5r)[i+7] <- "Umap_nn140" ;  names(Main_SQ_REP5r)[i+8] <- "Umap_nn150" ;  
+  names(Main_SQ_REP5r)[i+9] <- "Umap_nn180" ;
+}
+
 
 MEAN_SD_K_DF <- list()
 cu <- 1
 c34 <- 4
-for(i in seq(1,800,8)){
-  MAIN_SD_DF_c <- data.frame("Sample_ID" = Main_SQ_REP_r[i],"K" = Main_SQ_REP_r[i+1], "pca2D" = Main_SQ_REP_r[i+2], "pca5D" = Main_SQ_REP_r[i+3],
-                             "Umap_nn15" = Main_SQ_REP_r[i+4], "Umap_nn34" =  Main_SQ_REP_r34[[c34]] , "Umap_nn89" = Main_SQ_REP_r[i+5],
-                             "Umap_nn121" = Main_SQ_REP_r[i+6], "Umap_nn208" = Main_SQ_REP_r[i+7])
-  ag_df <- aggregate(MAIN_SD_DF_c[, 3:9], list(MAIN_SD_DF_c$K), mean)
-  colnames(ag_df) <- c("K",  'pca_2D', 'pca_5D',  'umap_nn.15', "Umap_nn34" ,'umap_nn.89', "umap_nn.121","umap_nn.208" )
+c8 <- 1
+for(i in seq(1,1000,10)){
+  MAIN_SD_DF_c <- data.frame("Sample_ID" = Main_SQ_REP_r[c8],"K" = Main_SQ_REP_r[c8+1], "pca2D" = Main_SQ_REP_r[c8+2], "pca5D" = Main_SQ_REP_r[c8+3],
+                             "Umap_nn15" = Main_SQ_REP_r[c8+4],   "Umap_nn208" = Main_SQ_REP_r[c8+7])
+  ag_df <- aggregate(MAIN_SD_DF_c[, 3:6], list(MAIN_SD_DF_c$K), mean)
+  colnames(ag_df) <- c("K",  'pca_2D', 'pca_5D',  'umap_nn.15',"umap_nn.208" )
   MEAN_SD_K_DF[[cu]] <- ag_df 
   cu <- cu + 1
   c34 <- c34 + 4
+  c8 <- c8 + 8
 }
 
 MEAN_K_SD_b <- data.frame(MEAN_SD_K_DF[[1]])
 for (i in  2:100){
-  MEAN_K_SD_b <- rbind(MEAN_K_SD_b, as.data.frame(MEAN_SD_K_DF[[2]]))
+  MEAN_K_SD_b <- rbind(MEAN_K_SD_b, as.data.frame(MEAN_SD_K_DF[[i]]))
 }
 
-MEAN_SD <- aggregate(MEAN_K_SD_b[, 2:8], list(MEAN_K_SD_b$K), mean)
+MEAN_SD <- aggregate(MEAN_K_SD_b[, 2:5], list(MEAN_K_SD_b$K), mean)
 colnames(MEAN_SD)[1] <- 'K'
 
 MEAN_SD_FUSION <-  melt(data = MEAN_SD, id.vars = "K")
 
 
-SD_SD <- aggregate(MEAN_K_SD_b[, 2:8], list(MEAN_K_SD_b$K), sd)
+SD_SD <- aggregate(MEAN_K_SD_b[, 2:5], list(MEAN_K_SD_b$K), sd)
 SD_SD_FUSION <-  melt(data = SD_SD, id.vars = "Group.1")
 colnames(SD_SD_FUSION)[3] <- "sd"
 
 MEAN_SD_FUSION  <- cbind(MEAN_SD_FUSION, "sd" = SD_SD_FUSION$sd)
 
-
 pl <- ggplot(MEAN_SD_FUSION, aes(x=K, y=value,   color=variable)) + geom_line() + geom_point()+
   scale_color_viridis(discrete=TRUE) +
-  geom_errorbar(aes(ymin=value-sd, ymax=value+sd)) 
+  geom_errorbar(aes(ymin=value-sd, ymax=value+sd)) +  theme(  legend.title = element_blank())
 p_legend <- get_legend(pl)
 
 p <- ggplot(MEAN_SD_FUSION, aes(x=K, y=value,   color=variable)) + geom_line() + geom_point()+
   scale_color_viridis(discrete=TRUE) +
   geom_errorbar(aes(ymin=value-sd, ymax=value+sd)) 
 p <- p +  labs(title="", 
-               y="SD", x= "k") +
+               y=TeX("$\\bar{SD}_k$"), x= "k") +
   theme( legend.position= 'none' ,#
          plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
          plot.subtitle =element_text(size=14, hjust=0.5),
@@ -1654,12 +1754,12 @@ for (i in 2:dim(MEAN_K_SD_b)[2]){
 }
 colnames(MEAN_K_SD_b_norm) <- colnames(MEAN_K_SD_b)
 
-MEAN_SD_norm <- aggregate(MEAN_K_SD_b_norm[, 2:8], list(MEAN_K_SD_b_norm$K), mean)
+MEAN_SD_norm <- aggregate(MEAN_K_SD_b_norm[, 2:5], list(MEAN_K_SD_b_norm$K), mean)
 colnames(MEAN_SD_norm)[1] <- 'K'
 
 MEAN_SD_FUSION_norm <-  melt(data = MEAN_SD_norm, id.vars = "K")
 
-SD_SD_norm <- aggregate(MEAN_K_SD_b_norm[, 2:8], list(MEAN_K_SD_b_norm$K), sd)
+SD_SD_norm <- aggregate(MEAN_K_SD_b_norm[, 2:5], list(MEAN_K_SD_b_norm$K), sd)
 SD_SD_FUSION_norm <-  melt(data = SD_SD_norm, id.vars = "Group.1")
 colnames(SD_SD_FUSION_norm)[3] <- "sd"
 
@@ -1669,7 +1769,7 @@ pn <- ggplot(MEAN_SD_FUSION_norm, aes(x=K, y=value,   color=variable)) + geom_li
   scale_color_viridis(discrete=TRUE) +
   geom_errorbar(aes(ymin=value-sd, ymax=value+sd)) 
 pn <- pn +  labs(title="", 
-                 y="SD", x= "k") +
+                 y=TeX("$\\bar{SD}_k'$"), x= "k") +
   theme( legend.position= 'none' ,#
          plot.title=element_text(size=16, face="bold", hjust=0.5,lineheight=1.2),  # title
          plot.subtitle =element_text(size=14, hjust=0.5),
@@ -1685,31 +1785,31 @@ print(pn)
 # Statistics
 
 Mean_K_DF_STAT <- data.frame("SD_m" = MEAN_K_SD_b[,2], "Method" = rep(colnames( MEAN_K_SD_b)[2], dim(MEAN_K_SD_b)[1]))
-for (i in 3:8){
+for (i in 3:5){
   Mean_K_DF_STATc <- data.frame("SD_m" = MEAN_K_SD_b[,i], "Method" = rep(colnames( MEAN_K_SD_b)[i], dim(MEAN_K_SD_b)[1]))
   Mean_K_DF_STAT <- rbind(Mean_K_DF_STAT, Mean_K_DF_STATc  )
 }
 
-paired_test_m_BILAT  <- pairwise.t.test(Mean_K_DF_STAT$SD_m, p.adj = "holm", Mean_K_DF_STAT$Method, paired = TRUE, alternative = 'two.sided')$p.value ;      
+paired_test_m_BILAT  <- pairwise.t.test(Mean_K_DF_STAT$SD_m, Mean_K_DF_STAT$Method, paired = TRUE, alternative = 'two.sided')$p.value ;      
 paired_test_m_BILAT  <- as.matrix(paired_test_m_BILAT)
-colnames(paired_test_m_BILAT ) <- c("pca 2D","pca 5D", "umap nn = 15",  "umap nn = 34", "umap nn = 89" , "umap nn = 121")
-rownames(paired_test_m_BILAT ) <- c("pca 5D", "umap nn = 15",  "umap nn = 34", "umap nn = 89" ,"umap nn = 121", "umap nn = 208" )
+colnames(paired_test_m_BILAT ) <- c("pca 2D","pca 5D", "umap nn = 15")
+rownames(paired_test_m_BILAT ) <- c("pca 5D", "umap nn = 15", "umap nn = 208" )
 paired_test_m_BILAT  <-  format(paired_test_m_BILAT  , scientific=TRUE,digits=3)
 tablemain_BILAT <- ggtexttable(paired_test_m_BILAT , rows =rownames(paired_test_m_BILAT),theme = ttheme("classic"))
 tablemain_BILAT
 
-paired_test_m_GREATER  <- pairwise.t.test(  Mean_K_DF_STAT$SD_m, p.adj = "holm", Mean_K_DF_STAT$Method,    paired = TRUE, alternative = 'greater')$p.value ;     
+paired_test_m_GREATER  <- pairwise.t.test(  Mean_K_DF_STAT$SD_m, Mean_K_DF_STAT$Method,    paired = TRUE, alternative = 'greater')$p.value ;     
 paired_test_m_GREATER  <- as.matrix(paired_test_m_GREATER)
-colnames(paired_test_m_GREATER ) <- c("pca 2D","pca 5D", "umap nn = 15","umap nn = 121")
-rownames(paired_test_m_GREATER ) <- c("pca 5D", "umap nn = 15","umap nn = 121", "umap nn = 208" )
+colnames(paired_test_m_GREATER ) <- c("pca 2D","pca 5D", "umap nn = 15" )
+rownames(paired_test_m_GREATER ) <-  c("pca 5D", "umap nn = 15", "umap nn = 208" )
 paired_test_m_GREATER  <-  format(paired_test_m_GREATER  , scientific=TRUE,digits=3)
 tablemain_GREATER <- ggtexttable(paired_test_m_GREATER , rows =rownames(paired_test_m_GREATER),theme = ttheme("classic"))
 tablemain_GREATER
 
-paired_test_m_LESS  <- pairwise.t.test(Mean_K_DF_STAT$SD_m, p.adj = "holm", Mean_K_DF_STAT$Method,    paired = TRUE,  alternative = 'less')$p.value ;     
+paired_test_m_LESS  <- pairwise.t.test(Mean_K_DF_STAT$SD_m, Mean_K_DF_STAT$Method,    paired = TRUE,  alternative = 'less')$p.value ;     
 paired_test_m_LESS  <- as.matrix(paired_test_m_LESS)
-colnames(paired_test_m_LESS ) <- c("pca 2D","pca 5D", "umap nn = 15","umap nn = 121")
-rownames(paired_test_m_LESS ) <- c("pca 5D", "umap nn = 15","umap nn = 121", "umap nn = 208" )
+colnames(paired_test_m_LESS ) <-c("pca 2D","pca 5D", "umap nn = 15")
+rownames(paired_test_m_LESS ) <- c("pca 2D","pca 5D", "umap nn = 15", "umap nn = 208")
 paired_test_m_LESS  <-  format(paired_test_m_LESS  , scientific=TRUE,digits=3)
 tablemain_LESS <- ggtexttable(paired_test_m_LESS , rows =rownames(paired_test_m_LESS),theme = ttheme("classic"))
 tablemain_LESS
@@ -1718,17 +1818,15 @@ ggarrange(tablemain_BILAT, tablemain_GREATER, tablemain_LESS, nrow = 3)
 
 # Summary table : 
 
-Main_stat_table <- matrix(ncol =7, nrow = 7)
-colnames(Main_stat_table) = c("PCA 2D", "PCA 5D", "UMAP nn = 15","UMAP nn = 34", "UMAP nn = 89" ,"UMAP nn = 121", "UMAP nn = 208")
-rownames(Main_stat_table) = c("PCA 2D", "PCA 5D", "UMAP nn = 15","UMAP nn = 34", "UMAP nn = 89", "UMAP nn = 121", "UMAP nn = 208")
-Main_stat_table[ 1,] = c("-", "1.00e+00", "9.32e-196", "7.04e-164", "1.38e-30", "1.41e-34", "4.37e-33")
-Main_stat_table[ 2,] = c("0.00e+00", "-", "4.93-240", "1.02e-231", "3.59e-260", "1.35e-264", "7.02e-254")
-Main_stat_table[ 3,] = c("1.00e+00", "1.00e+00", "-", "1.00e+00", "1.00e+00", "1.00e+00", "1.00e+00")
-Main_stat_table[ 4,] = c("1.00e+00", "1.00e+00", "1.16e-240", "-", "1.00e+00", "1.00e+00", "1.00e+00")
-Main_stat_table[ 5,] = c("1.00e+00", "1.00e+00", "1.69e-226", "4.23e-202", '-', "1.00e+00" ,"1.27e-05")
-Main_stat_table[ 6,] = c("1.00e+00", "1.00e+00", "7.01e-225", "9.07e-202", "1.00e+00",  '-', "4.56e-13")
-Main_stat_table[ 7,] = c("1.00e+00", "1.00e+00", "3.99e-231", "1.47e-210", "1.00e+00",  "1.00e+00", '-')
+Main_stat_table <- matrix(ncol =4, nrow = 4)
+colnames(Main_stat_table) = c("PCA 2D", "PCA 5D", "UMAP nn = 15", "UMAP nn = 208")
+rownames(Main_stat_table) = c("PCA 2D", "PCA 5D", "UMAP nn = 15", "UMAP nn = 208")
+Main_stat_table[ 1,] = c("-", "1.00e+00", "1.54e-177",  "1.04e-34")
+Main_stat_table[ 2,] = c("0.00e+00", "-", "5.16e-235",  "2.22e-220")
+Main_stat_table[ 3,] = c("1.00e+00", "1.00e+00", "-", "1.00e+00")
+Main_stat_table[ 4,] = c("1.00e+00", "1.00e+00", "1.46e-187",  '-')
 Main_stat_table
+
 
 
 tab <- ggtexttable(Main_stat_table, 
@@ -1745,16 +1843,12 @@ tab <- table_cell_bg(tab, row = 4, column = 4,
                      fill="darkgray")
 tab <- table_cell_bg(tab, row = 5, column = 5,
                      fill="darkgray")
-tab <- table_cell_bg(tab, row = 6, column = 6,
-                     fill="darkgray")
-tab <- table_cell_bg(tab, row = 7, column = 7,
-                     fill="darkgray")
-tab <- table_cell_bg(tab, row = 8, column = 8,
-                     fill="darkgray")
+
 tab
 
 ggarrange(ggarrange(p,pn,p_legend, labels = c("A","B"),  widths = c(.4,.4,.2), ncol =3),
           ggarrange(tab, labels = 'C'),
-          nrow = 2)
+          heights = c(.6,.4),nrow = 2)
 
+ggarrange(p,pn,p_legend, labels = c("A","B"),  widths = c(.4,.4,.2), ncol =3)
 

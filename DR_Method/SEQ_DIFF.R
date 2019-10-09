@@ -26,7 +26,8 @@ Merging_function <- function(l_data, dataRef){
 # ------------------------------
 
 ############################################################################################
-Seq_calcul <- function(l_data, dataRef, listK){
+Seq_calcul <- function( l_data, dataRef, listK){
+
   # __________ Clusters initialization ______
   no_cores <- detectCores() # - 1
   cl <- makeCluster(no_cores)
@@ -58,8 +59,8 @@ Seq_calcul <- function(l_data, dataRef, listK){
     colnames(dist2) <- as.character(dataRef[ ,1])
     # ____________________________________________
     seq_c_data <- data.frame()
-     #seq_c_data <- foreach(i=1:length(listK),.combine=rbind) %dopar% {
-    for(i in 1:length(listK)){
+    seq_c_data <- foreach(i=1:length(listK),.combine=rbind) %dopar% {
+    #for(i in 1:length(listK)){
     k <- listK[i]
     colnames(c_data)[1] <- 'Sample_ID'  ; colnames(dataRef)[1] <- 'Sample_ID'
     if (dim(c_data)[1] != dim(dataRef)[1]){
@@ -86,10 +87,10 @@ Seq_calcul <- function(l_data, dataRef, listK){
 
     seq_diff_l <- c()
     n <- dim(dist1)[1]
-    for (i in 1:n){
-      c_point <- rownames(dist1)[i]
-      N1_dist_l <- list(dist1[i, ])[[1]]
-      N2_dist_l <- list(dist2[i, ])[[1]]
+    for (ii in 1:n){
+      c_point <- rownames(dist1)[ii]
+      N1_dist_l <- list(dist1[ii, ])[[1]]
+      N2_dist_l <- list(dist2[ii, ])[[1]]
         
       names(N1_dist_l) <- rownames(dist1)
       names(N2_dist_l) <- rownames(dist2)
@@ -117,7 +118,6 @@ Seq_calcul <- function(l_data, dataRef, listK){
           N2_index_j = which(N2_df$Sample_ID  == All_neighbors[j]  )
   
           if(  s1 + ((k - N1_df$Rank1[N1_index_j]) * abs(N1_df$Rank1[N1_index_j] - N2_df$Rank2[N2_index_j])) < s1 ){
-            print("warning")
           }
           s1 = s1 + ((k - N1_df$Rank1[N1_index_j]) * abs(N1_df$Rank1[N1_index_j] - N2_df$Rank2[N2_index_j]))
           s2 = s2 + ((k - N2_df$Rank2[N2_index_j]) * abs(N1_df$Rank1[N1_index_j] - N2_df$Rank2[N2_index_j]))
@@ -173,10 +173,12 @@ Seq_main <- function(l_data, dataRef, listK, colnames_res_df = NULL , filename =
   df_to_write <- data.frame('Sample_ID' = global_seq_list[[1]]$Sample_ID, 'K' = global_seq_list[[1]]$K )
   for (i in 1:length(global_seq_list)){
     df_to_write <- cbind(df_to_write, global_seq_list[[i]]$Seq)
-    colnames(df_to_write)[dim(df_to_write)[2]] <- paste('V', i, sep="")
   }
   if (is.null(colnames_res_df) == FALSE){
     colnames(df_to_write)[3:length(colnames(df_to_write))] <- colnames_res_df
+  }
+  else{
+    colnames(df_to_write)[dim(df_to_write)[2]] <- paste('V', i, sep="")
   }
   if (is.null(filename) == FALSE) {
     if (file.exists(as.character(filename))){
@@ -220,13 +222,19 @@ Seq_main <- function(l_data, dataRef, listK, colnames_res_df = NULL , filename =
       }
     }
     if(dim(data_diff_mean_k)[2] == 3){
+      if(dim(data_diff_mean_k)[1] < 30){
       WT = wilcox.test(data_diff_mean_k[,2], data_diff_mean_k[, 3], paired = TRUE)
       print(WT)
-      if (graphics == TRUE){
-        return(list('Seq_df' = df_to_write, 'Seq_mean_by_k' = data_diff_mean_k, 'graphics' = p, 'stats' = list("WT" = WT)))
       }
       else{
-        return(list('Seq_df' = df_to_write, 'Seq_mean_by_k' = data_diff_mean_k, 'stats' = list("WT" = WT)))
+        WT = t.test(data_diff_mean_k[,2], data_diff_mean_k[, 3], paired = TRUE)
+        print(WT)
+      }
+      if (graphics == TRUE){
+        return(list('Seq_df' = df_to_write, 'Seq_mean_by_k' = data_diff_mean_k, 'graphics' = p, 'paired_test' = WT))
+      }
+      else{
+        return(list('Seq_df' = df_to_write, 'Seq_mean_by_k' = data_diff_mean_k, 'paired_test' =  WT))
       }
     }
     else{
@@ -235,13 +243,18 @@ Seq_main <- function(l_data, dataRef, listK, colnames_res_df = NULL , filename =
         c_df <- data.frame('mean_seq' = data_diff_mean_k[, i], 'method'=rep(paste(colnames(data_diff_mean_k)[i], i, sep = ""), dim(data_diff_mean_k)[1]))
         pwt_df <- rbind(pwt_df, c_df )
       }
+      if (dim(data_diff_mean_k)[1] < 30){
       paired_test_m  <- pairwise.wilcox.test(pwt_df$mean_seq, pwt_df$method,    paired = TRUE)$p.value #p.adj = "holm",
-      
-      if (graphics == TRUE){
-        return(list('Seq_df' = df_to_write, 'Seq_mean_by_k' = data_diff_mean_k, 'graphics' = p,  'pWT' = paired_test_m ))
       }
       else{
-        return(list('Seq_df' = df_to_write, 'Seq_mean_by_k' = data_diff_mean_k,  'pWT' = paired_test_m ))
+        paired_test_m  <-  pairwise.t.test(pwt_df$mean_seq, pwt_df$method,    paired = TRUE)$p.value #p.adj = "holm",
+        
+      }
+      if (graphics == TRUE){
+        return(list('Seq_df' = df_to_write, 'Seq_mean_by_k' = data_diff_mean_k, 'graphics' = p,  'pairwise_tests' = paired_test_m ))
+      }
+      else{
+        return(list('Seq_df' = df_to_write, 'Seq_mean_by_k' = data_diff_mean_k,  'pairwise_tests' = paired_test_m ))
       }
     }
     warning('Unexpected request ')
@@ -250,7 +263,7 @@ Seq_main <- function(l_data, dataRef, listK, colnames_res_df = NULL , filename =
 ############################################################################################
 
 ############################################################################################
-Seq_graph_by_k  <-function (data_Seq, Names=NULL, list_col=NULL, data_diff_mean_K = NULL, log = FALSE){
+Seq_graph_by_k  <-function (data_Seq, Names=NULL, data_diff_mean_K = NULL, log = FALSE){
   if (is.null(data_diff_mean_K) == TRUE) {
     data_diff_mean_k <- data.frame("k" =  unique(data_Seq$K))
     for (j in seq(from = 3, to = dim(data_Seq)[2], by = 1)) {
@@ -283,14 +296,14 @@ Seq_graph_by_k  <-function (data_Seq, Names=NULL, list_col=NULL, data_diff_mean_
     theme_set(theme_bw())
     p <- ggplot(data_diff_mean_k_graph, aes(x=k, y=diff_seq,  color=Method)) + geom_line() + geom_point()+
       scale_color_viridis(discrete=TRUE) 
-    p <- p +  labs(title="Sequence difference metric", caption = "Means of sequence difference values k  between each method and the reference one. ",
-         y=TeX("$log(\\bar{SD_k})$"), x="K") +theme(plot.title=element_text(size=18, face="bold", color="#17202A", hjust=0.5,lineheight=1.2),  # title
+    p <- p +  labs(title="Sequence difference metric", y=TeX("mean(SD)_k"), x="K") +theme(plot.title=element_text(size=18, face="bold", color="#17202A", hjust=0.5,lineheight=1.2),  # title
                                                    plot.subtitle =element_text(size=13, color="#17202A", hjust=0.5),  # caption
                                                    plot.caption =element_text(size=10, color="#17202A", hjust=0.5),  # caption
-                                                   axis.title.x=element_text(size=12, face="bold"),  # X axis title
+                                                   axis.title.x=element_text(size=12, face="italic"),  # X axis title
                                                    axis.title.y=element_text(size=12, face="bold"),  # Y axis title
                                                    axis.text.x=element_text(size=12),  # X axis text
-                                                   axis.text.y=element_text(size=12))  # Y axis text
+                                                   axis.text.y=element_text(size=12),
+                                                   legend.title = element_blank())  # Y axis text
   print(p)
   return(p)
   }
@@ -305,20 +318,19 @@ Seq_graph_by_k  <-function (data_Seq, Names=NULL, list_col=NULL, data_diff_mean_
     theme_set(theme_bw())
     p <- ggplot(data_diff_mean_k_graph, aes(x=k, y=diff_seq,  color=Method)) + geom_line() + geom_point()+
       scale_color_viridis(discrete=TRUE) 
-    p <- p +  labs(title="Sequence difference metric", caption = "Means of sequence difference values k  between each method and the reference one. ",
-                   y=TeX("$log(\\bar{SD_k})$"), x="K") +theme(plot.title=element_text(size=18, face="bold", color="#17202A", hjust=0.5,lineheight=1.2),  # title
+    p <- p +  labs(title="Sequence difference metric",   y=TeX("log(mean(SD)_k)"), x="K") +theme(plot.title=element_text(size=18, face="bold", color="#17202A", hjust=0.5,lineheight=1.2),  # title
                                                      plot.subtitle =element_text(size=13, color="#17202A", hjust=0.5),  # caption
                                                      plot.caption =element_text(size=10, color="#17202A", hjust=0.5),  # caption
-                                                     axis.title.x=element_text(size=12, face="bold"),  # X axis title
+                                                     axis.title.x=element_text(size=12, face="italic"),  # X axis title
                                                      axis.title.y=element_text(size=12, face="bold"),  # Y axis title
                                                      axis.text.x=element_text(size=12),  # X axis text
-                                                     axis.text.y=element_text(size=12))  # Y axis text
+                                                     axis.text.y=element_text(size=12),
+                                                     legend.title = element_blank())  # Y axis text
     print(p)
     return(p)
   } 
 }
 ############################################################################################
-
 ############################################################################################
 seq_permutation_test <- function(data, data_ref, list_K, n=30, graph = TRUE){
   
@@ -353,7 +365,7 @@ seq_permutation_test <- function(data, data_ref, list_K, n=30, graph = TRUE){
   by_k_alea <- main_df[,3:dim(main_df)[2]]
   Means_alea <- rowMeans(by_k_alea)
   WT  = wilcox.test(main_df[ ,1], Means_alea, alternative = "less")
-  print(WT)
+  #print(WT)
   
   theme_set(theme_bw())
   p <- ggplot()
@@ -368,7 +380,7 @@ seq_permutation_test <- function(data, data_ref, list_K, n=30, graph = TRUE){
   p <- p + geom_line(data = c_MA_df, aes(x=k, y = main_df), colour = '#388E3C')+geom_point(data = c_MA_df, aes(x=k, y=main_df), colour ='#388E3C')
   
   p <- p +  labs(title="Significance test of the Sequence difference metric",
-                 y=TeX("$\\bar{SD_k} = \\frac{1}{N} \\sum_{i=1}^N SD_{i,k}$"), x="K") +theme(plot.title=element_text(size=18, face="bold", color="#17202A", hjust=0.5,lineheight=1.2),  # title
+                 y=TeX("mean(SD)_k"), x="K") +theme(plot.title=element_text(size=18, face="bold", color="#17202A", hjust=0.5,lineheight=1.2),  # title
                                                    plot.subtitle =element_text(size=13, color="#17202A", hjust=0.5),  # caption
                                                    plot.caption =element_text(size=10, color="#17202A", hjust=0.5),  # caption
                                                    axis.title.x=element_text(size=12, face="bold"),  # X axis title

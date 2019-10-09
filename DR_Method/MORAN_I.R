@@ -7,10 +7,10 @@ moran_I_main <-function(l_coords_data , spatial_data, listK, nsim = 500, Stat=FA
     c_data <- l_coords_data[[i]]
     colnames(c_data)[1] <- "Sample_ID"
     if (dim(c_data)[1] != dim(spatial_data)[1]){
-      warning(paste("The number of rows between the coordinate data frame [", i,"] and the spatial attribute data frame differs. A inner join is going to be done.", sep=""))
+      warning(paste("The number of rows between the coordinate data frame [", i,"] and the spatial attribute data frame differs. A inner join is going to be done, using sample' ID.", sep=""))
     }
     else if (sum(c_data[, 1] == spatial_data[, 1]) != dim(c_data)[1]){
-      warning(paste("Warning : Sample_IDs between the cordinate data frame [", i,"] and the spatial attribute data frame are not the same, or are not in the same order. An inner join is going to be effected.", sep =""))
+      warning(paste("Sample_IDs between the cordinate data frame [", i,"] and the spatial attribute data frame are not the same, or are not in the same order. An inner join is going to be effected, using sample' ID.", sep =""))
     }
     data_m <- merge(spatial_data, c_data, by= "Sample_ID")
     c_data <- data_m[, (dim(spatial_data)[2]+1):dim(data_m)[2]]
@@ -137,12 +137,12 @@ moran_stat_HD <- function(data, K, spatial_att, obs_moran_I, nsim = 99){
   method <- "Monte-Carlo simulation of Moran I"
   lres <- list(statistic=statistic, parameter=parameter,
                p.value=pval, alternative="greater", method=method)
-  print(lres)
   return(lres)
 }
 
 #####################################################################
 moran_I_scatter_plot <- function(data, Xlab = NULL, Ylab=NULL, Title= NULL){
+  custom.col <- c( '#1E90FF', '#6C3483','#D81B60',  '#B22222', "#D16103",  "#FFD700",  '#2ECC71',"#33691E", '#626567',"#17202A") 
   if (dim(data)[3] == 1){
     data = data[,,1]
     vect_metod <- c()
@@ -175,7 +175,7 @@ moran_I_scatter_plot <- function(data, Xlab = NULL, Ylab=NULL, Title= NULL){
     
     p <- ggplot(df_graph, aes(x=Attributes, y=moranI,  group=Methods, color = Methods)) +  geom_point(size = 4)+
       scale_colour_manual(values=custom.col[1:length(unique(df_graph$Methods))])
-    p <- p +  labs(title=Title, caption = "Moran indexes for each variable and for each method. ",
+    p <- p +  labs(title=Title, 
                    y=Ylab, x= Xlab) +theme(plot.title=element_text(size=18, face="bold", color="#17202A", hjust=0.5,lineheight=1.2),  # title
                                            plot.subtitle =element_text(size=13, color="#17202A", hjust=0.5),  # caption
                                            plot.caption =element_text(size=10, color="#17202A", hjust=0.5),  # caption
@@ -224,7 +224,7 @@ moran_I_scatter_plot <- function(data, Xlab = NULL, Ylab=NULL, Title= NULL){
     }
     p <- ggplot(df_graph, aes(x=Attributes, y=moranI,   fill = Methods)) + geom_boxplot(notch=F)+
       scale_fill_manual(values=custom.col[1:length(unique(df_graph$Methods))])
-    p <- p +  labs(title=Title, caption = "Moran indexes distribution by k level for each variable and for each method. ",
+    p <- p +  labs(title=Title, 
                    y=Ylab, x= Xlab) +theme(plot.title=element_text(size=18, face="bold", color="#17202A", hjust=0.5,lineheight=1.2),  # title
                                            plot.subtitle =element_text(size=13, color="#17202A", hjust=0.5),  # caption
                                            plot.caption =element_text(size=10, color="#17202A", hjust=0.5),  # caption
@@ -232,11 +232,12 @@ moran_I_scatter_plot <- function(data, Xlab = NULL, Ylab=NULL, Title= NULL){
                                            axis.title.y=element_text(size=12, face="bold"),  # Y axis title
                                            axis.text.x=element_text(size=12),  # X axis text
                                            axis.text.y=element_text(size=12))  # Y axis text
-    print(p) 
+    print(p)
     return(list(p,df_graph))
     
   }
 }
+
 
 ########################################################################################
 moran_I_scatter_plot_by_k <- function(data, Xlab = NULL, Ylab=NULL, Title= NULL){
@@ -299,7 +300,7 @@ moran_I_scatter_plot_by_k <- function(data, Xlab = NULL, Ylab=NULL, Title= NULL)
         colnames(data) <- as.character(seq(dim(data)[2]))
       }
       for (i in 1:dim(data)[1]){
-        cm <- rep(rownames(data)[i],dim(data)[1])
+        cm <- rep(rownames(data)[i],dim(data)[2])
         vect_metod <- c(vect_metod, cm)
         moranI <- c(moranI, data[i, , k])
         att <- colnames(data)
@@ -312,8 +313,6 @@ moran_I_scatter_plot_by_k <- function(data, Xlab = NULL, Ylab=NULL, Title= NULL)
       att_k <- c(att_k, att_I)
     }
     df_graph <- data.frame("Methods" = as.character(vect_metod_k), "Attributes" =att_k, "moranI" = moranI_k, "K_level" =  as.numeric(k_vect))
-    print(head(df_graph))
-    
     if (is.null(Title)){
       Title <- "Moran indexes by attribute according "
     }
@@ -327,8 +326,7 @@ moran_I_scatter_plot_by_k <- function(data, Xlab = NULL, Ylab=NULL, Title= NULL)
     for ( i in 1:length(unique(df_graph$Attributes))){
       df_graph$Attributes <- as.character(df_graph$Attributes)
       df_graph_c <- df_graph[ df_graph$Attributes == unique(df_graph$Attributes)[i],]
-      print("df_graph_c")
-      print(unique(as.character(df_graph_c$Methods)))
+
       p <- ggplot(df_graph_c, aes(x=as.numeric(K_level), y=moranI, color = as.factor(Methods))) + geom_point()+
         scale_color_viridis(discrete=TRUE) 
       p <- p +  labs(title= paste(Title,  rownames(data)[i] ) , caption = "Moran indexes distribution by k level for each variable and for each method. ",
@@ -346,90 +344,3 @@ moran_I_scatter_plot_by_k <- function(data, Xlab = NULL, Ylab=NULL, Title= NULL)
     
   }
 }
-###############################
-##########################################################################################################
-moran_ranking <-function(l_coords_data , spatial_data, K_value, N  ,ref=NULL,methods_name = NULL){
-  methods_names <- names(l_coords_data)
-  colnames(spatial_data)[1] <- "Sample_ID"
-  L_coords_data <- list()
-  Spa_data <- list() 
-  for (i in 1:length(l_coords_data)){
-    c_data <- l_coords_data[[i]]
-    colnames(c_data)[1] <- "Sample_ID"
-    if (dim(c_data)[1] != dim(spatial_data)[1]){
-      warning(paste("The number of rows between the coordinate data frame [", i,"] and the spatial attribute data frame differs. A inner join is going to be done.", sep=""))
-    }
-    else if (sum(c_data[, 1] == spatial_data[, 1]) != dim(c_data)[1]){
-      warning(paste("Warning : Sample_IDs between the cordinate data frame [", i,"] and the spatial attribute data frame are not the same, or are not in the same order. An inner join is going to be effected.", sep =""))
-    }
-    data_m <- merge(spatial_data, c_data, by= "Sample_ID")
-    c_data <- data_m[, (dim(spatial_data)[2]+1):dim(data_m)[2]]
-    c_data <- cbind(data_m[, 1], c_data)
-    colnames(c_data)[1] <- "Sample_ID"
-    L_coords_data[[i]] <- c_data
-    c_spatial_data <- data_m[, 1:dim(spatial_data)[2]]
-    Spa_data[[i]] <- c_spatial_data
-  }
-  l_coords_data <- L_coords_data
-  MI_array <- matrix(NA, length(l_coords_data), (dim(spatial_data)[2]) -1)
-  for (i in 1:length(l_coords_data)){
-    c_data <- l_coords_data[[i]]
-    spatial_data <- Spa_data[[i]]
-    c_sample_id <- spatial_data[ ,1]
-    if (dim(c_data)[2] == 3){
-      c_data <- as.matrix(c_data[, 2:dim(c_data)[2]])
-    }
-    if (dim(c_data)[2] == 2){
-      k_neigh <- knn2nb(knearneigh(c_data, k=K_value, RANN=FALSE))
-      ww <- nb2listw(k_neigh, style='B')
-    }
-    for (j in 2:dim(spatial_data)[2]){
-      if (dim(c_data)[2] == 2){
-        MI <- moran(spatial_data[, j], ww, n=length(ww$neighbours), S0=Szero(ww))
-        MI_array[i,(j-1)] <- MI$I
-      }
-      else{
-        c_spatial_data <- data.frame("Sample_ID"= as.character(c_sample_id), "att" = spatial_data[, j] )
-        MI <- moran_index_HD(data = c_data, spatial_att = c_spatial_data, K = K_value, merge = FALSE)
-        MI_array[i,(j-1)] <- MI 
-      }
-    } 
-  }
- 
-  if(is.null(methods_name)==F & length(methods_name) == dim(MI_array)[1]){
-    rownames(MI_array) <- methods_name
-  }
-  else{
-    rownames(MI_array) <- methods_names 
-  }
-  colnames(MI_array) <- colnames(spatial_data)[2:dim(spatial_data)[2]]
-  MI_array <- t(MI_array)  
-  MI_LNEN_DF <- MI_array
-  first_cor_list <- c()
-  for (i in 1:dim(MI_LNEN_DF)[2]){
-    sort_df <- MI_LNEN_DF[order(MI_LNEN_DF[,i]),]
-    sortN_l <- rownames(sort_df)[1:N]
-    first_cor_list[[i]] <- sortN_l
-  }
-  names(first_cor_list) <- names(List_coords)
-  if (length(first_cor_list)== 2){
-    v.table<- length(intersect(first_cor_list[[1]], first_cor_list[[2]]))
-  }  
-  else if (length(first_cor_list)== 3){
-    v.table<- length(intersect(first_cor_list[[1]], first_cor_list[[2]], first_cor_list[[3]]))
-  }  
-  else if (length(first_cor_list)== 4){
-    v.table<- length(intersect(first_cor_list[[1]], first_cor_list[[2]], first_cor_list[[3]], first_cor_list[[4]]))
-  }  
-  else if (length(first_cor_list)== 5){
-    v.table<- length(intersect(first_cor_list[[1]], first_cor_list[[2]], first_cor_list[[3]], first_cor_list[[4]],, first_cor_list[[5]]))
-  }  
-  
-  return(list('MoranIndex' = MI_array, 'Venn.Diagram' =v.table ))
-}
-
-####################################################################
-
-
-
-

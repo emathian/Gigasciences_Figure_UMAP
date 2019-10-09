@@ -824,6 +824,68 @@ sd_map_lnen[[1]]
 sd_map_lnen[[2]]
 
 
+## SD MAIN with mean and error bars ------------------------------------------------
+start_time <- Sys.time()
+no_cores <- detectCores()
+no_cores
+cl <- makeCluster(4)
+registerDoParallel(cl)
+Main_SQ_REP <-  foreach(i=1:10, .combine=c, .packages = c("umap", 'data.table', "ade4", "parallel", "doParallel", "cluster"))%dopar%{
+Main_SQ_REP <- c()
+n_neighborsL <- c(15,30,90,180,208)
+List_projection <- list("pca2D" = pca5D[1:3], "pca5D" = pca5D)
+for (i in 1:10){
+  print(i)
+  for (j in 1:length(n_neighborsL)){
+    print(j)
+    umap_c <- umap(vst50[,2:dim(vst50)[2]], n_neighbors = n_neighborsL[j])
+    umap_c <- as.data.frame(umap_c$layout)
+    umap_c <- cbind("Sample_ID" = vst50[,1], umap_c)
+    names_umap <- paste("umap_nn", n_neighborsL[j])
+    List_projection[[j+2]] <- umap_c
+    names(List_projection)[j+2] <- names_umap 
+  }
+  Main_SQ_res_NN <- Seq_main(l_data = List_projection , dataRef =  data.frame(vst50) , listK = seq(from= 10, to = 208, by = 5), colnames_res_df = c("pca_2D", "pca_5D","umap_nn=15", "umap_nn=30","umap_nn=90", "umap_nn=180", "umap_nn=208"))
+  print(head( Main_SQ_res_NN[[1]]))
+  Main_SQ_REP <- c(Main_SQ_REP, Main_SQ_res_NN[[1]])
+}  
+
+end_time <- Sys.time()
+start_time - end_time
+
+
+MEAN_SD_DF <- data.frame()
+
+for (i in 1:10){
+  MEAN_SD_K_L <- list()
+  c <- 1
+  for(j in seq(1,81,9)){
+    
+    MAIN_SD_DF_c <- data.frame("Sample_ID" = Main_SQ_REP[[j]],"K" =         Main_SQ_REP[[j+1]], "PCA 2D" = Main_SQ_REP[[j+2]], "PCA 5D" = Main_SQ_REP[[j+3]],"Umap nn = 15" = Main_SQ_REP[[j+4]],  "Umap nn = 30"= Main_SQ_REP[[j+5]], "Umap nn = 90" = Main_SQ_REP[[j+6]], "Umap nn = 180" = Main_SQ_REP[[j+7]], "Umap nn = 208" = Main_SQ_REP[[j+8]])
+    
+    mean_df <- aggregate(MAIN_SD_DF_c[ ,3:8], list(MAIN_SD_DF_c$K), mean)
+    
+    colnames(mean_df) <- c("K",  'pca_2D', 'pca_5D',  'umap nn = 15', "Umap nn = 30" ,"Umap nn = 90", "umap nn = 208" )
+    
+    MEAN_SD_K_L[[c]] <- mean_df
+    c <- c + 1
+  }
+  
+  MEAN_SD_DF <- rbind(MEAN_SD_DF, as.data.frame(MEAN_SD_K_L[[i]]))
+  
+}
+Mean_SD <- melt(aggregate(MEAN_SD_DF[, 2:7], list(MEAN_SD_DF$K), mean), id.vars = "Group.1")
+
+colnames(Mean_SD)[3] <- "mean"
+colnames(Mean_SD)[1] <- "K"
+sd_SD <- melt(aggregate(MEAN_SD_DF[, 2:7], list(MEAN_SD_DF$K), sd), id.vars = "Group.1")
+colnames(sd_SD)[3] <- "sd"
+Main_SD_DF <- cbind(Mean_SD, "sd" = sd_SD$sd)
+ggplot(Main_SD_DF, aes(x =  K, y = mean, color = variable)) + geom_line() + geom_point()+
+  scale_color_viridis(discrete=TRUE) +
+  geom_errorbar(aes(ymin = mean-sd, ymax = mean+sd))+  labs(title = "", y = "mean(SD)", x = "k") 
+
+
 ## Individual analysis of the neighborhood ---------------------------------
 
 ### Projection of S02297 nearest neighbors according UMAP Coordinates -----------------------

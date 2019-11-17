@@ -27,7 +27,7 @@ Merging_function <- function(l_data, dataRef){
 
 ############################################################################################
 Seq_calcul <- function( l_data, dataRef, listK){
-
+  print("dimanche4")
   # __________ Clusters initialization ______
   no_cores <- detectCores() # - 1
   cl <- makeCluster(no_cores)
@@ -59,17 +59,23 @@ Seq_calcul <- function( l_data, dataRef, listK){
     colnames(dist2) <- as.character(dataRef[ ,1])
     # ____________________________________________
     seq_c_data <- data.frame()
-    seq_c_data <- foreach(i=1:length(listK),.combine=rbind) %dopar% {
+    seq_c_dataL <- foreach(i=1:length(listK)) %dopar% {
+    #,.combine=rbind
     #for(i in 1:length(listK)){
     k <- listK[i]
+    warn1 = FALSE
+    warn2  = FALSE
     colnames(c_data)[1] <- 'Sample_ID'  ; colnames(dataRef)[1] <- 'Sample_ID'
     if (dim(c_data)[1] != dim(dataRef)[1]){
+      warn1 = T
       warning("The number of lines between `c_data` and `dataRef` differs. A merge will be effected")
     }
     else if (sum(c_data[, 1] == dataRef[, 1]) != length(c_data[, 1])){
+      warn2 = T
       warning("Sample_IDs in `c_data` and `dataRef` are not the same, or are not in the same order. An inner join will be effected.")
     }
     data_m <- merge(c_data, dataRef, by = 'Sample_ID')
+    dim_data_m = dim(data_m)
     ncol_c_data <- dim(c_data)[2]
     c_data <- data_m[, 1:dim(c_data)[2]]
     dataRef <- data_m[, (dim(c_data)[2]+1):dim(data_m)[2]]
@@ -83,6 +89,8 @@ Seq_calcul <- function( l_data, dataRef, listK){
     dist2 <- as.matrix(dist(dataRef[, 2:dim(dataRef)[2]], method = "euclidian", diag = TRUE, upper = TRUE))
     rownames(dist2) <- as.character(dataRef[ ,1])
     colnames(dist2) <- as.character(dataRef[ ,1])
+    dim_dist1= dim(dist1)
+    dim_dist2 = dim(dist2)
     # ____________________________________________
 
     seq_diff_l <- c()
@@ -104,12 +112,14 @@ Seq_calcul <- function( l_data, dataRef, listK){
         
       N1_rank_l <- N1_rank_l[1:k]
       N2_rank_l <- N2_rank_l[1:k]
+      
+      N1_lenght_rank = length( N2_rank_l)
         
       N1_df <- data.frame("Sample_ID" = names(N1_rank_l) , "Rank1" = N1_rank_l)
       N2_df <- data.frame("Sample_ID" = names(N2_rank_l) , "Rank2" = N2_rank_l)
         
       All_neighbors <- unique(c(as.character(N1_df$Sample_ID),as.character(N2_df$Sample_ID)))
-        
+      dim_all_neighbors = length(All_neighbors)
       s1 = 0
       s2 = 0
       for (j in 1:length( All_neighbors)){
@@ -132,18 +142,17 @@ Seq_calcul <- function( l_data, dataRef, listK){
           s1 = s1 
           s2 = s2 + ((k - N2_df$Rank2[N2_index_j]) * abs( N2_df$Rank2[N2_index_j]))
         }
-        
       }
       S = 0.5 * s1 + 0.5 * s2
 
       seq_diff_l <- c(seq_diff_l,  S)
       }
       seq_diff_k_df <- data.frame('Sample_ID' = c_data$Sample_ID, 'K' = rep(k, length(c_data$Sample_ID)), 'Seq' = seq_diff_l)
-     # seq_diff_k_df
+      H_seq_diff_k_df = head(seq_diff_k_df)
       seq_c_data <- rbind( seq_c_data,   seq_diff_k_df )
+      list(data = seq_c_data,  index_i = i, K_element = k, WARN1 = warn1, WARN2 = warn2, D_data_m = dim_data_m, D_dist1 = dim_dist1, D_dist2 = dim_dist2, D_all_neigh = dim_all_neighbors,head_seq_diff_k =  H_seq_diff_k_df, N1RankLenght= N1_lenght_rank)
     }
-    seq_c_data <- seq_c_data[order(seq_c_data$K),]
-    global_seq_list[[I]] <- seq_c_data
+    global_seq_list[[I]] <- seq_c_dataL
   }
   stopCluster(cl)
   return(global_seq_list)

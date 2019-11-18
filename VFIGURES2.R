@@ -656,7 +656,37 @@ vst50_TCACLCNECSCLC_VSamp[1:10,1:10]
 List_projection <- list(data.frame(acp_fig1_li_df), data.frame(acp_5D_li_df),data.frame(umap15_res_df[,1:3]),data.frame(umap112_res_df[,1:3]) ,data.frame(umap121_res_df[,1:3]), data.frame(umap135_res_df[,1:3]),data.frame(umap208_res_df[,1:3]))
 str(List_projection)
 
+List_projection2 <- list(data.frame(acp_fig1_li_df), data.frame(umap15_res_df[,1:3]),data.frame(umap208_res_df[,1:3]))
 
+## SD calculation ---------------------------------------------------------
+gloabal_seq_list = Seq_calcul( List_projection2,  data.frame(vst50_TCACLCNECSCLC_VSamp), listK =seq(from= 10, to = 208, by = 15) )
+
+seq_c_data = data.frame()
+for (i in seq(1:length(TEST1))){
+  seq_c_data <- rbind(seq_c_data,TEST1[[i]][[1]] )
+}
+
+l = 6
+MSSE = 2
+MSSM = 3
+M = 0
+for (i in seq(0,(l-MSSE - MSSM +1))){
+  for (j in seq((MSSE-1),(l-MSSE))){
+    for (k in seq((MSSE),(l-MSSE +1))){
+      for (l in seq((MSSE + MSSM -1),(l))){
+        if (i < j < k < l){
+        print("i")
+        print(i)
+        print("j")
+        print(j)
+        print("seglen")
+        print(j-i +1)
+        M = M +1
+  }
+      }
+    }
+  }
+}
 ## SD calculation ---------------------------------------------------------
 
 #Main_SQ_res_NN <- Seq_main(l_data = List_projection , dataRef = data.frame(vst50_TCACLCNECSCLC_VSamp) , listK = seq(from= 1, to = 208, by = 5), colnames_res_df = c("pca_2D", "pca_5D","umap_md=0.1_nn=15", "umap_md=0.1_nn=112","umap_md=0.1_nn=121", "umap_md=0.1_nn=135","umap_md=0.1_nn=208")  , filename = NULL , graphics = TRUE, stats = TRUE) #
